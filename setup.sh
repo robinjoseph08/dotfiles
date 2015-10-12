@@ -12,6 +12,7 @@ FILES=''
 FILES+=' .aliases'
 FILES+=' .bash_profile'
 FILES+=' .inputrc'
+FILES+=' .tmux.conf'
 FILES+=' .vimrc'
 FILES+=' .zshrc'
 
