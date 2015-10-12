@@ -22,6 +22,8 @@ BREW+=' tmux'
 BREW+=' tree'
 BREW+=' vim'
 BREW+=' wget'
+BREW+=' zsh'
+BREW+=' zsh-completions'
 
 function message {
   echo "$1"
@@ -40,6 +42,11 @@ if [[ $OSTYPE == darwin* ]]; then
   fi
   message "Installing$BREW..." | indent
   brew install $BREW 2> /dev/null | indent
+  if [ ! -d ~/.oh-my-zsh ]; then
+    message "Installing Oh My Zsh..." | indent
+    curl -L https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh | sh | indent
+    chsh -s /bin/zsh
+  fi
 fi
 message "...done"
 echo
@@ -63,7 +70,6 @@ for f in $FILES; do
 done
 message "...done"
 echo
-exit 0
 
 echo
 message "Setting up vim..."
