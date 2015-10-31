@@ -18,6 +18,7 @@ FILES+=' .zshrc'
 
 # List of programs to install with brew
 BREW=''
+BREW+=' cmake'
 BREW+=' nvm'
 BREW+=' reattach-to-user-namespace'
 BREW+=' tmux'
@@ -27,26 +28,22 @@ BREW+=' wget'
 BREW+=' zsh'
 BREW+=' zsh-completions'
 
-function indent {
-  sed "s/^/  /g"
-}
-
 echo
 echo "Setting up dependencies..."
 if [[ $OSTYPE == darwin* ]]; then
   if ! type brew > /dev/null 2>&1; then
-    echo "Installing brew..." | indent
-    ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" | indent
+    echo "Installing brew..."
+    ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
   fi
-  echo "Installing$BREW..." | indent
+  echo "Installing$BREW..."
   brew install $BREW 2> /dev/null
   if [ ! -d ~/.oh-my-zsh ]; then
-    echo "Installing Oh My Zsh..." | indent
+    echo "Installing Oh My Zsh..."
     curl -L https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh | sh
     chsh -s /bin/zsh
   fi
   if [ ! -d ~/.rvm ]; then
-    echo "Installing rvm..." | indent
+    echo "Installing rvm..."
     \curl -sSL https://get.rvm.io | bash
   fi
 fi
@@ -65,7 +62,7 @@ fi
 
 for f in $FILES; do
   if [ -f ~/$f ]; then
-    echo "Copying old ~/$f into $OLD_DIR..." | indent
+    echo "Copying old ~/$f into $OLD_DIR..."
     cp ~/$f $OLD_DIR/$f
   fi
   cp $DOTFILES_DIR/$f ~/$f
@@ -77,8 +74,13 @@ echo
 echo "Setting up vim..."
 if [ ! -d ~/.vim/bundle/Vundle.vim ]; then
   mkdir -p ~/.vim/bundle
-  git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim | indent
-  vim +PluginInstall +qall | indent
+  git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
+  git clone https://github.com/Valloric/YouCompleteMe.git ~/.vim/bundle/YouCompleteMe
+  cd ~/.vim/bundle/YouCompleteMe
+  git submodule update --init --recursive
+  ./install.sh
+  cd $DOTFILES_DIR
+  vim +PluginInstall +qall
 fi
 echo "...done"
 echo
@@ -87,7 +89,7 @@ echo
 echo "Setting up zsh..."
 mkdir -p ~/.oh-my-zsh/custom/themes
 if [ -f ~/.oh-my-zsh/custom/themes/robin.zsh-theme ]; then
-  echo "Copying old robin.zsh-theme into $OLD_DIR..." | indent
+  echo "Copying old robin.zsh-theme into $OLD_DIR..."
   cp ~/.oh-my-zsh/custom/themes/robin.zsh-theme $OLD_DIR
 fi
 cp $DOTFILES_DIR/robin.zsh-theme ~/.oh-my-zsh/custom/themes
