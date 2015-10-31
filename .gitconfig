@@ -1,0 +1,9 @@
+[user]
+  name = Robin Joseph
+  email = robin.joseph@me.com
+[credential]
+  helper = osxkeychain
+[push]
+  default = simple
+[alias]
+  fixup = commit --amend -C HEAD
