@@ -11,6 +11,7 @@ cd $DOTFILES_DIR
 FILES=''
 FILES+=' .aliases'
 FILES+=' .bash_profile'
+FILES+=' .gitconfig'
 FILES+=' .inputrc'
 FILES+=' .tmux.conf'
 FILES+=' .vimrc'
