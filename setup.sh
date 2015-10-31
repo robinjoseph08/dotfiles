@@ -28,6 +28,11 @@ BREW+=' wget'
 BREW+=' zsh'
 BREW+=' zsh-completions'
 
+# Checks if a file exists but isn't a symlink
+function check_file () {
+  [ -f $1 ] && [ ! -h $1 ]
+}
+
 echo
 echo "Setting up dependencies..."
 if [[ $OSTYPE == darwin* ]]; then
@@ -61,11 +66,11 @@ if [ ! -e $OLD_DIR ]; then
 fi
 
 for f in $FILES; do
-  if [ -f ~/$f ]; then
+  if check_file ~/$f; then
     echo "Copying old ~/$f into $OLD_DIR..."
     cp ~/$f $OLD_DIR/$f
   fi
-  cp $DOTFILES_DIR/$f ~/$f
+  ln -sf $DOTFILES_DIR/$f ~/$f
 done
 echo "...done"
 echo
@@ -88,10 +93,10 @@ echo
 echo
 echo "Setting up zsh..."
 mkdir -p ~/.oh-my-zsh/custom/themes
-if [ -f ~/.oh-my-zsh/custom/themes/robin.zsh-theme ]; then
+if check_file ~/.oh-my-zsh/custom/themes/robin.zsh-theme; then
   echo "Copying old robin.zsh-theme into $OLD_DIR..."
   cp ~/.oh-my-zsh/custom/themes/robin.zsh-theme $OLD_DIR
 fi
-cp $DOTFILES_DIR/robin.zsh-theme ~/.oh-my-zsh/custom/themes
+ln -sf $DOTFILES_DIR/robin.zsh-theme ~/.oh-my-zsh/custom/themes
 echo "...done"
 echo
