@@ -14,6 +14,7 @@ Plugin 'crusoexia/vim-monokai'
 " plugins
 Plugin 'airblade/vim-gitgutter'
 Plugin 'bling/vim-airline'
+Plugin 'godlygeek/tabular'
 Plugin 'kien/ctrlp.vim'
 Plugin 'scrooloose/nerdcommenter'
 Plugin 'scrooloose/nerdtree'
@@ -36,6 +37,9 @@ Plugin 'voithos/vim-python-syntax'
 " All of your Plugins must be added before the following line
 call vundle#end()         " required
 filetype plugin indent on " required
+
+" set leader
+:let mapleader = '-'
 
 " basic config
 syntax on
@@ -116,6 +120,15 @@ let g:ctrlp_custom_ignore = {
   \ 'dir':  '\.git$\|\.yardoc\|node_modules\|log\|tmp\|coverage$',
   \ 'file': '\.so$\|\.dat$|\.DS_Store$'
   \ }
+
+" tabular key bindings
+nmap <leader>a= :Tabularize /=<CR>
+vmap <leader>a= :Tabularize /=<CR>
+nmap <leader>a: :Tabularize /:\zs<CR>
+vmap <leader>a: :Tabularize /:\zs<CR>
+
+" multiple cursor settings
+let g:multi_cursor_exit_from_visual_mode=0
 
 " keep at least 5 lines below the cursor
 set scrolloff=5
