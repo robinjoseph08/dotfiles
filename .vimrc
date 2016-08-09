@@ -49,7 +49,7 @@ call vundle#end()         " required
 filetype plugin indent on " required
 
 " set leader
-:let mapleader = '-'
+":let mapleader = '-'
 
 " basic config
 syntax on
@@ -86,7 +86,7 @@ set noswapfile
 autocmd FileType nerdtree setlocal nolist
 
 " auto start NERDTree
-autocmd vimenter * NERDTree
+"autocmd vimenter * NERDTree
 
 " airline config
 let g:airline_powerline_fonts = 1
@@ -106,7 +106,6 @@ endif
 let g:ycm_semantic_triggers['typescript'] = ['.']
 
 " also autosave when going to insert mode
-inoremap kj <Esc>:w<CR>
 inoremap jk <Esc>:w<CR>
 
 " map semicolon to colon
@@ -133,11 +132,14 @@ set laststatus=2
 " escape search highliting by hitting return
 nnoremap <CR> :noh<CR><CR>
 
+" font options
+colorscheme monokai
+
 " remove any trailing whitespace that is in the file
 autocmd BufRead,BufWrite * if ! &bin | silent! %s/\s\+$//ge | endif
 
 " lists invisible chars
-set list listchars=tab:❘-,trail:·,extends:»,precedes:«,nbsp:×
+"set list listchars=tab:❘-,trail:·,extends:»,precedes:«,nbsp:×
 
 " ctrl p settings
 " Ignore some folders and files for CtrlP indexing
