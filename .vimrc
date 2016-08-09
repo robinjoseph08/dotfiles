@@ -39,7 +39,7 @@ call vundle#end()         " required
 filetype plugin indent on " required
 
 " set leader
-:let mapleader = '-'
+":let mapleader = '-'
 
 " basic config
 syntax on
@@ -79,7 +79,6 @@ let g:syntastic_check_on_open = 1
 let g:syntastic_check_on_wq = 0
 
 " also autosave when going to insert mode
-inoremap kj <Esc>:w<CR>
 inoremap jk <Esc>:w<CR>
 
 " map semicolon to colon
@@ -107,8 +106,6 @@ set laststatus=2
 nnoremap <CR> :noh<CR><CR>
 
 " font options
-set background=dark
-set t_Co=256
 colorscheme monokai
 
 " remove any trailing whitespace that is in the file
