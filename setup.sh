@@ -28,6 +28,7 @@ BREW+=' vim'
 BREW+=' wget'
 BREW+=' zsh'
 BREW+=' zsh-completions'
+BREW+=' zsh-syntax-highlighting'
 
 # Checks if a file exists but isn't a symlink
 function check_file () {

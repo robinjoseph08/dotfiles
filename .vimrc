@@ -12,23 +12,32 @@ Plugin 'VundleVim/Vundle.vim'
 Plugin 'crusoexia/vim-monokai'
 
 " plugins
+Plugin 'AndrewRadev/splitjoin.vim'
+Plugin 'Quramy/tsuquyomi'
+Plugin 'Shougo/vimproc'
+Plugin 'Xuyuanp/nerdtree-git-plugin'
 Plugin 'airblade/vim-gitgutter'
-Plugin 'bling/vim-airline'
 Plugin 'godlygeek/tabular'
 Plugin 'kien/ctrlp.vim'
-Plugin 'scrooloose/nerdcommenter'
+Plugin 'ryanoasis/vim-devicons'
 Plugin 'scrooloose/nerdtree'
 Plugin 'scrooloose/syntastic'
 Plugin 'terryma/vim-multiple-cursors'
+Plugin 'tpope/vim-commentary'
 Plugin 'tpope/vim-surround'
+Plugin 'vim-airline/vim-airline'
+Plugin 'vim-airline/vim-airline-themes'
+
+" YouCompleteMe
 if v:version > 703
   Plugin 'Valloric/YouCompleteMe'
 endif
-Plugin 'Xuyuanp/nerdtree-git-plugin'
 
 " syntax files
 Plugin 'digitaltoad/vim-jade'
+Plugin 'elixir-lang/vim-elixir'
 Plugin 'elzr/vim-json'
+Plugin 'leafgarland/typescript-vim'
 Plugin 'nono/vim-handlebars'
 Plugin 'pangloss/vim-javascript'
 Plugin 'tpope/vim-markdown'
@@ -48,6 +57,13 @@ set ruler
 highlight ColorColumn ctermbg=2
 set colorcolumn=121
 
+" fonts and icons
+set encoding=utf8
+set guifont=Meslo\ LG\ S\ Regular\ for\ Powerline\ Nerd\ Font\ Complete\ Mono:h11
+set background=dark
+set t_Co=256
+colorscheme monokai
+
 " tabs
 set expandtab
 set smarttab
@@ -65,6 +81,9 @@ set nobackup
 set nowritebackup
 set noswapfile
 
+" nerdtree
+autocmd FileType nerdtree setlocal nolist
+
 " auto start NERDTree
 autocmd vimenter * NERDTree
 
@@ -73,10 +92,17 @@ let g:airline_powerline_fonts = 1
 let g:airline#extensions#tabline#enabled = 1
 
 " syntastic config
-"let g:syntastic_always_populate_loc_list = 1
-"let g:syntastic_auto_loc_list = 1
 let g:syntastic_check_on_open = 1
 let g:syntastic_check_on_wq = 0
+let g:syntastic_javascript_checkers = ['eslint']
+let g:syntastic_typescript_checkers = ['tsuquyomi']
+
+" tsuquyomi config
+let g:tsuquyomi_disable_quickfix = 1
+if !exists('g:ycm_semantic_triggers')
+  let g:ycm_semantic_triggers = {}
+endif
+let g:ycm_semantic_triggers['typescript'] = ['.']
 
 " also autosave when going to insert mode
 inoremap kj <Esc>:w<CR>
@@ -106,13 +132,11 @@ set laststatus=2
 " escape search highliting by hitting return
 nnoremap <CR> :noh<CR><CR>
 
-" font options
-set background=dark
-set t_Co=256
-colorscheme monokai
-
 " remove any trailing whitespace that is in the file
 autocmd BufRead,BufWrite * if ! &bin | silent! %s/\s\+$//ge | endif
+
+" lists invisible chars
+set list listchars=tab:❘-,trail:·,extends:»,precedes:«,nbsp:×
 
 " ctrl p settings
 " Ignore some folders and files for CtrlP indexing

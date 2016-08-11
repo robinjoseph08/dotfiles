@@ -86,17 +86,45 @@ source ~/.aliases
 # editor
 export EDITOR=vim
 
+# less
+export LESS="-XR"
+
+# grep
+GREP_OPTIONS=""
+GREP_OPTIONS+=" --color=auto"
+GREP_OPTIONS+=" --exclude-dir=.bzr"
+GREP_OPTIONS+=" --exclude-dir=CVS"
+GREP_OPTIONS+=" --exclude-dir=.git"
+GREP_OPTIONS+=" --exclude-dir=.hg"
+GREP_OPTIONS+=" --exclude-dir=.svn"
+GREP_OPTIONS+=" --exclude-dir=node_modules"
+GREP_OPTIONS+=" --exclude-dir=coverage"
+GREP_OPTIONS+=" --exclude-dir=dist"
+GREP_OPTIONS+=" --exclude-dir=vendor"
+GREP_OPTIONS+=" --exclude=./newrelic_agent.log"
+GREP_OPTIONS+=" --exclude=./npm-shrinkwrap.json"
+GREP_OPTIONS+=" --exclude=./CHANGELOG.md"
+GREP_OPTIONS+=" --exclude=./public/main.min.css"
+GREP_OPTIONS+=" --exclude=./public/bundle.js"
+export GREP_OPTIONS
+
 # X11
 export PATH="$PATH:/opt/X11/bin"
 
 # nvm
 export NVM_DIR=~/.nvm
-source $(brew --prefix nvm)/nvm.sh
+source $NVM_DIR/nvm.sh
+
+# avn
+[[ -s "$HOME/.avn/bin/avn.sh" ]] && source "$HOME/.avn/bin/avn.sh"
 
 # rvm
-export PATH="$PATH:$HOME/.rvm/bin" # Add RVM to PATH for scripting
+export PATH="$PATH:$HOME/.rvm/bin"
 source ~/.rvm/scripts/rvm
 
 # .inputrc
 bindkey '^[OA' history-beginning-search-backward
 bindkey '^[OB' history-beginning-search-forward
+
+# zsh syntax highlighting
+source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
