@@ -20,7 +20,6 @@ FILES+=' .zshrc'
 # List of programs to install with brew
 BREW=''
 BREW+=' cmake'
-BREW+=' nvm'
 BREW+=' reattach-to-user-namespace'
 BREW+=' tmux'
 BREW+=' tree'
@@ -53,6 +52,25 @@ if [[ $OSTYPE == darwin* ]]; then
     echo "Installing rvm..."
     \curl -sSL https://get.rvm.io | bash
   fi
+fi
+echo "...done"
+echo
+
+echo
+echo "Installing nvm..."
+if [ ! -d ~/.nvm ]; then
+  curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.31.4/install.sh | bash
+  export NVM_DIR="$HOME/.nvm"
+  [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+fi
+echo "...done"
+echo
+
+echo
+echo "Installing avn..."
+if [ ! -d ~/.avn ]; then
+  npm install -g avn avn-nvm
+  avn setup
 fi
 echo "...done"
 echo
