@@ -12,10 +12,11 @@ Plugin 'VundleVim/Vundle.vim'
 Plugin 'crusoexia/vim-monokai'
 
 " plugins
+Plugin 'ryanoasis/vim-devicons'
 Plugin 'airblade/vim-gitgutter'
 Plugin 'bling/vim-airline'
 Plugin 'godlygeek/tabular'
-Plugin 'kien/ctrlp.vim'
+Plugin 'ctrlpvim/ctrlp.vim'
 Plugin 'scrooloose/nerdcommenter'
 Plugin 'scrooloose/nerdtree'
 Plugin 'scrooloose/syntastic'
@@ -66,7 +67,7 @@ set nowritebackup
 set noswapfile
 
 " auto start NERDTree
-autocmd vimenter * NERDTree
+"autocmd vimenter * NERDTree
 
 " airline config
 let g:airline_powerline_fonts = 1
@@ -137,4 +138,5 @@ set mouse=a
 set nohidden
 
 " close vim if all tabs are closed
-" autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType == "primary") | q | endif
+"autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType == "primary") | q | endif
+

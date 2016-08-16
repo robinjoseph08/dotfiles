@@ -6,7 +6,8 @@ export ZSH=~/.oh-my-zsh
 # Optionally, if you set this to "random", it'll load a random theme each
 # time that oh-my-zsh is loaded.
 #ZSH_THEME="robbyrussell"
-ZSH_THEME="robin"
+#ZSH_THEME="robin"
+ZSH_THEME="af-magic"
 
 # Uncomment the following line to use case-sensitive completion.
 # CASE_SENSITIVE="true"
@@ -82,6 +83,7 @@ source $ZSH/oh-my-zsh.sh
 
 # Aliases
 source ~/.aliases
+source ~/.lob_aliases
 
 # editor
 export EDITOR=vim
