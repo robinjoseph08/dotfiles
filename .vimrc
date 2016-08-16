@@ -18,8 +18,9 @@ Plugin 'Shougo/vimproc'
 Plugin 'Xuyuanp/nerdtree-git-plugin'
 Plugin 'airblade/vim-gitgutter'
 Plugin 'godlygeek/tabular'
-Plugin 'kien/ctrlp.vim'
 Plugin 'ryanoasis/vim-devicons'
+Plugin 'ctrlpvim/ctrlp.vim'
+Plugin 'scrooloose/nerdcommenter'
 Plugin 'scrooloose/nerdtree'
 Plugin 'scrooloose/syntastic'
 Plugin 'terryma/vim-multiple-cursors'
@@ -167,4 +168,5 @@ set mouse=a
 set nohidden
 
 " close vim if all tabs are closed
-" autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType == "primary") | q | endif
+"autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType == "primary") | q | endif
+
