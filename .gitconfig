@@ -7,3 +7,5 @@
   default = simple
 [alias]
   fixup = commit --amend -c head
+  uncommit = reset --soft HEAD^
+  recommit = commit -c ORIG_HEAD
