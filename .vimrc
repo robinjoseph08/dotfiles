@@ -12,13 +12,13 @@ Plugin 'VundleVim/Vundle.vim'
 Plugin 'crusoexia/vim-monokai'
 
 " plugins
+Plugin 'ryanoasis/vim-devicons'
 Plugin 'AndrewRadev/splitjoin.vim'
 Plugin 'Quramy/tsuquyomi'
 Plugin 'Shougo/vimproc'
 Plugin 'Xuyuanp/nerdtree-git-plugin'
 Plugin 'airblade/vim-gitgutter'
 Plugin 'godlygeek/tabular'
-Plugin 'ryanoasis/vim-devicons'
 Plugin 'ctrlpvim/ctrlp.vim'
 Plugin 'scrooloose/nerdcommenter'
 Plugin 'scrooloose/nerdtree'
@@ -60,8 +60,8 @@ highlight ColorColumn ctermbg=2
 set colorcolumn=121
 
 " fonts and icons
-set encoding=utf8
-set guifont=Meslo\ LG\ S\ Regular\ for\ Powerline\ Nerd\ Font\ Complete\ Mono:h11
+set encoding=utf-8
+set guifont=Droid\ Sans\ Mono\ for\ Powerline\ Plus\ Nerd\ File\ Types:h11
 set background=dark
 set t_Co=256
 colorscheme monokai
