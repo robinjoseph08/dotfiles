@@ -72,6 +72,10 @@ set smarttab
 set shiftwidth=2
 set softtabstop=2
 
+" change split opening to below and right
+set splitbelow
+set splitright
+
 " better moving between windows
 map <C-j> <C-W>j
 map <C-k> <C-W>k
