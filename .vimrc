@@ -1,5 +1,5 @@
-  set nocompatible " be iMproved, required
-  filetype off     " required
+set nocompatible " be iMproved, required
+"filetype off     " required
 
 " set the runtime path to include Vundle and initialize
 set rtp+=~/.vim/bundle/Vundle.vim
@@ -12,6 +12,7 @@ Plugin 'VundleVim/Vundle.vim'
 Plugin 'crusoexia/vim-monokai'
 
 " plugins
+Plugin 'jiangmiao/auto-pairs'
 Plugin 'ryanoasis/vim-devicons'
 Plugin 'AndrewRadev/splitjoin.vim'
 Plugin 'Quramy/tsuquyomi'
@@ -25,8 +26,6 @@ Plugin 'scrooloose/nerdtree'
 Plugin 'scrooloose/syntastic'
 Plugin 'terryma/vim-multiple-cursors'
 Plugin 'tiagofumo/vim-nerdtree-syntax-highlight'
-Plugin 'tpope/vim-commentary'
-Plugin 'tpope/vim-surround'
 Plugin 'vim-airline/vim-airline'
 Plugin 'vim-airline/vim-airline-themes'
 
@@ -47,24 +46,42 @@ Plugin 'voithos/vim-python-syntax'
 
 " All of your Plugins must be added before the following line
 call vundle#end()         " required
-filetype plugin indent on " required
+filetype plugin on " required
 
 " set leader
-":let mapleader = '-'
+let mapleader = ','
+let g:mapleader = ','
 
 " basic config
+colorscheme monokai
+
 syntax on
 set number
 set ruler
 highlight ColorColumn ctermbg=2
 set colorcolumn=121
+set autoread                          " auto read edits from outside
+set clipboard=unnamed                 " Use OS clipboard
 
 " fonts and icons
 set encoding=utf-8
 set guifont=Droid\ Sans\ Mono\ for\ Powerline\ Plus\ Nerd\ File\ Types:h11
 set background=dark
 set t_Co=256
-colorscheme monokai
+
+" Visually moves up and down (for wrapped lines)
+nnoremap k gk
+nnoremap j gj
+
+" [g]o to [b]eginning and [e]nd of lines
+nnoremap gb ^
+nnoremap ge $
+
+" better moving between windows
+map <C-j> <C-W>j
+map <C-k> <C-W>k
+map <C-h> <C-W>h
+map <C-l> <C-W>l
 
 " tabs
 set expandtab
@@ -76,19 +93,13 @@ set softtabstop=2
 set splitbelow
 set splitright
 
-" better moving between windows
-map <C-j> <C-W>j
-map <C-k> <C-W>k
-map <C-h> <C-W>h
-map <C-l> <C-W>l
-
 " disable backups
 set nobackup
 set nowritebackup
 set noswapfile
 
 " nerdtree
-autocmd FileType nerdtree setlocal nolist
+"autocmd FileType nerdtree setlocal nolist
 
 " auto start NERDTree
 "autocmd vimenter * NERDTree
@@ -109,9 +120,11 @@ if !exists('g:ycm_semantic_triggers')
   let g:ycm_semantic_triggers = {}
 endif
 let g:ycm_semantic_triggers['typescript'] = ['.']
+let g:ycm_autoclose_preview_window_after_completion = 1
 
 " also autosave when going to insert mode
 inoremap jk <Esc>:w<CR>
+inoremap kj <Esc>:w<CR>
 
 " map semicolon to colon
 nnoremap ; :
@@ -137,7 +150,6 @@ set laststatus=2
 " escape search highliting by hitting return
 nnoremap <CR> :noh<CR><CR>
 
-" font options
 colorscheme monokai
 
 " remove any trailing whitespace that is in the file
