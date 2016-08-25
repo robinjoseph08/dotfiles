@@ -89,7 +89,7 @@ source ~/.lob_aliases
 export EDITOR=vim
 
 # less
-export LESS="-XR"
+# export LESS="-XR"
 
 # grep
 GREP_OPTIONS=""
