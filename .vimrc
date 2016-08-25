@@ -1,5 +1,5 @@
 set nocompatible " be iMproved, required
-"filetype off     " required
+filetype off     " required
 
 " set the runtime path to include Vundle and initialize
 set rtp+=~/.vim/bundle/Vundle.vim
@@ -45,16 +45,10 @@ Plugin 'tpope/vim-markdown'
 Plugin 'voithos/vim-python-syntax'
 
 " All of your Plugins must be added before the following line
-call vundle#end()         " required
-filetype plugin on " required
-
-" set leader
-let mapleader = ','
-let g:mapleader = ','
+call vundle#end()                     " required
+filetype plugin indent on          " required
 
 " basic config
-colorscheme monokai
-
 syntax on
 set number
 set ruler
@@ -74,8 +68,8 @@ nnoremap k gk
 nnoremap j gj
 
 " [g]o to [b]eginning and [e]nd of lines
-nnoremap gb ^
-nnoremap ge $
+nnoremap B ^
+nnoremap E $
 
 " better moving between windows
 map <C-j> <C-W>j
@@ -83,7 +77,7 @@ map <C-k> <C-W>k
 map <C-h> <C-W>h
 map <C-l> <C-W>l
 
-" tabs
+" tabs/indents
 set expandtab
 set smarttab
 set shiftwidth=2
@@ -124,7 +118,6 @@ let g:ycm_autoclose_preview_window_after_completion = 1
 
 " also autosave when going to insert mode
 inoremap jk <Esc>:w<CR>
-inoremap kj <Esc>:w<CR>
 
 " map semicolon to colon
 nnoremap ; :
