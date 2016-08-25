@@ -28,6 +28,7 @@ Plugin 'terryma/vim-multiple-cursors'
 Plugin 'tiagofumo/vim-nerdtree-syntax-highlight'
 Plugin 'vim-airline/vim-airline'
 Plugin 'vim-airline/vim-airline-themes'
+Plugin 'vim-easyclip'                                   " Removed delete and yank functionality
 
 " YouCompleteMe
 if v:version > 703
