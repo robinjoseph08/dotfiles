@@ -28,7 +28,6 @@ Plugin 'terryma/vim-multiple-cursors'
 Plugin 'tiagofumo/vim-nerdtree-syntax-highlight'
 Plugin 'vim-airline/vim-airline'
 Plugin 'vim-airline/vim-airline-themes'
-Plugin 'vim-easyclip'                                   " Removed delete and yank functionality
 
 " YouCompleteMe
 if v:version > 703
@@ -47,7 +46,6 @@ Plugin 'voithos/vim-python-syntax'
 
 " All of your Plugins must be added before the following line
 call vundle#end()                     " required
-filetype plugin indent on          " required
 
 " basic config
 syntax on
@@ -68,9 +66,11 @@ set t_Co=256
 nnoremap k gk
 nnoremap j gj
 
-" [g]o to [b]eginning and [e]nd of lines
-nnoremap B ^
-nnoremap E $
+" Move around more quickly
+nnoremap H 0
+vnoremap H 0
+nnoremap L $
+vnoremap L $
 
 " better moving between windows
 map <C-j> <C-W>j
@@ -79,10 +79,14 @@ map <C-h> <C-W>h
 map <C-l> <C-W>l
 
 " tabs/indents
+set shiftwidth=2                      " Default tab settings
+set softtabstop=2
+filetype plugin on                    " required
+filetype indent on                    " change indent based on file type
 set expandtab
 set smarttab
-set shiftwidth=2
-set softtabstop=2
+set autoindent
+set smarttab
 
 " change split opening to below and right
 set splitbelow
