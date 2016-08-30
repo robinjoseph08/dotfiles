@@ -12,7 +12,6 @@ Plugin 'VundleVim/Vundle.vim'
 Plugin 'crusoexia/vim-monokai'
 
 " plugins
-Plugin 'jiangmiao/auto-pairs'
 Plugin 'ryanoasis/vim-devicons'
 Plugin 'AndrewRadev/splitjoin.vim'
 Plugin 'Quramy/tsuquyomi'
