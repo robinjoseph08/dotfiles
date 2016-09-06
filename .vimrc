@@ -54,6 +54,8 @@ highlight ColorColumn ctermbg=2
 set colorcolumn=121
 set autoread                          " auto read edits from outside
 set clipboard=unnamed                 " Use OS clipboard
+set undodir=~/.vim/undo/
+set undofile
 
 " fonts and icons
 set encoding=utf-8
