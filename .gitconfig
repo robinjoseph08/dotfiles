@@ -6,8 +6,9 @@
 [push]
   default = simple
 [alias]
-  fixup = commit --amend -c head
-  uncommit = reset --soft HEAD^
-  recommit = commit -c ORIG_HEAD
+  fixup = commit --amend -c head      ; Append changes to last commit
+  uncommit = reset --soft HEAD^       ; Move last commit's changes to the staging area
+  recommit = commit -c ORIG_HEAD      ; Commit current changes as recently removed head
+  prune = remote prune origin         ; Prune local branches to match origin
 [color "diff"]
-	meta = magenta
+  meta = magenta
