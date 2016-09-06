@@ -165,10 +165,10 @@ let g:ctrlp_custom_ignore = {
   \ }
 
 " tabular key bindings
-nmap <leader>a= :Tabularize /=<CR>
-vmap <leader>a= :Tabularize /=<CR>
-nmap <leader>a: :Tabularize /:\zs<CR>
-vmap <leader>a: :Tabularize /:\zs<CR>
+nmap <leader>t= :Tabularize /=<CR>
+vmap <leader>t= :Tabularize /=<CR>
+nmap <leader>t: :Tabularize /:\zs<CR>
+vmap <leader>t: :Tabularize /:\zs<CR>
 
 " multiple cursor settings
 let g:multi_cursor_exit_from_visual_mode=0
