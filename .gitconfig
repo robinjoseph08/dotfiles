@@ -10,5 +10,6 @@
   uncommit = reset --soft HEAD^       ; Move last commit's changes to the staging area
   recommit = commit -c ORIG_HEAD      ; Commit current changes as recently removed head
   prune = remote prune origin         ; Prune local branches to match origin
+  show-files = show --name-only       ; Show names of files updated in last commit
 [color "diff"]
   meta = magenta
