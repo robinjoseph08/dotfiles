@@ -124,6 +124,7 @@ let g:ycm_autoclose_preview_window_after_completion = 1
 
 " also autosave when going to insert mode
 inoremap jk <Esc>:w<CR>
+inoremap kj <Esc>:w<CR>
 
 " map semicolon to colon
 nnoremap ; :
@@ -172,6 +173,9 @@ vmap <leader>t: :Tabularize /:\zs<CR>
 
 " multiple cursor settings
 let g:multi_cursor_exit_from_visual_mode=0
+
+" fix aligned chains in javascript
+let g:javascript_opfirst=1
 
 " keep at least 5 lines below the cursor
 set scrolloff=5
