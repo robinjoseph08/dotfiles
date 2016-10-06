@@ -67,6 +67,9 @@ set t_Co=256
 nnoremap k gk
 nnoremap j gj
 
+" Have left and right movement wrap lines
+set whichwrap+=<,>,h,l,[,]
+
 " Move around more quickly
 nnoremap H 0
 vnoremap H 0
