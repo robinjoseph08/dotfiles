@@ -126,8 +126,8 @@ let g:ycm_semantic_triggers['typescript'] = ['.']
 let g:ycm_autoclose_preview_window_after_completion = 1
 
 " also autosave when going to insert mode
-inoremap jk <Esc>:w<CR>
-inoremap kj <Esc>:w<CR>
+inoremap jk <Esc>
+inoremap kj <Esc>
 
 " map semicolon to colon
 nnoremap ; :
@@ -164,7 +164,7 @@ autocmd BufRead,BufWrite * if ! &bin | silent! %s/\s\+$//ge | endif
 " ctrl p settings
 " Ignore some folders and files for CtrlP indexing
 let g:ctrlp_custom_ignore = {
-  \ 'dir':  '\.git$\|\.yardoc\|node_modules\|log\|tmp\|coverage$',
+  \ 'dir':  '\.git$\|\.yardoc\|node_modules\|tmp\|coverage$',
   \ 'file': '\.so$\|\.dat$|\.DS_Store$'
   \ }
 
