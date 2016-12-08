@@ -13,6 +13,7 @@ FILES+=' .aliases'
 FILES+=' .bash_profile'
 FILES+=' .gitconfig'
 FILES+=' .inputrc'
+FILES+=' .psqlrc'
 FILES+=' .tmux.conf'
 FILES+=' .vimrc'
 FILES+=' .zshrc'
@@ -59,7 +60,7 @@ echo
 echo
 echo "Installing nvm..."
 if [ ! -d ~/.nvm ]; then
-  curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.31.4/install.sh | bash
+  curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.314/install.sh | bash
   export NVM_DIR="$HOME/.nvm"
   [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 fi
