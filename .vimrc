@@ -82,6 +82,10 @@ map <C-k> <C-W>k
 map <C-h> <C-W>h
 map <C-l> <C-W>l
 
+" Move between buffers with tab and shift-tab
+nnoremap <Tab> :bnext<CR>
+nnoremap <S-Tab> :bprevious<CR>
+
 " tabs/indents
 set shiftwidth=2                      " Default tab settings
 set softtabstop=2
