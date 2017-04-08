@@ -99,6 +99,13 @@ autocmd FileType nerdtree setlocal nolist
 let g:airline_powerline_fonts = 1
 let g:airline#extensions#tabline#enabled = 1
 
+" fzf settings
+" enable fzf
+nnoremap <C-p> :FZF --multi<CR>
+
+" fzf layout
+let g:fzf_layout = { 'down': '~30%' }
+
 " syntastic config
 let g:syntastic_check_on_open = 1
 let g:syntastic_check_on_wq = 0
@@ -147,6 +154,9 @@ autocmd BufRead,BufWrite * if ! &bin | silent! %s/\s\+$//ge | endif
 set list listchars=tab:❘-,trail:·,extends:»,precedes:«,nbsp:×
 
 " ctrl p settings
+" disable it in favor of fzf
+let g:loaded_ctrlp = 1
+
 " Ignore some folders and files for CtrlP indexing
 let g:ctrlp_custom_ignore = {
   \ 'dir':  '\.git$\|\.yardoc\|node_modules\|log\|tmp\|coverage$',

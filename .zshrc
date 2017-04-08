@@ -128,3 +128,7 @@ bindkey '^[OB' history-beginning-search-forward
 
 # zsh syntax highlighting
 source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+
+# fzf
+# filter out gitignored files
+export FZF_DEFAULT_COMMAND='ag --hidden --ignore .git -g ""'
