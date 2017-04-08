@@ -191,5 +191,6 @@ set mouse=a
 " close buffer when tab is closed
 set nohidden
 
-" close vim if all tabs are closed
-" autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType == "primary") | q | endif
+" persistent undo
+set undodir=~/.vim/undo/
+set undofile
