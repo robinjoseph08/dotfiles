@@ -89,11 +89,11 @@ set nobackup
 set nowritebackup
 set noswapfile
 
-" nerdtree
+" NERDTree
 autocmd FileType nerdtree setlocal nolist
 
-" auto start NERDTree
-autocmd vimenter * NERDTree
+" auto start NERDTree automatically
+" autocmd vimenter * NERDTree
 
 " airline config
 let g:airline_powerline_fonts = 1
