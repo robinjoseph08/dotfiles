@@ -166,6 +166,13 @@ let g:ctrlp_custom_ignore = {
   \ 'file': '\.so$\|\.dat$|\.DS_Store$'
   \ }
 
+" vim test
+let test#strategy = "vimux"
+
+nmap <silent> <leader>t :TestNearest<CR>
+nmap <silent> <leader>f :TestFile<CR>
+nmap <silent> <leader>r :TestSuite<CR>```
+
 " tabular key bindings
 nmap <leader>a= :Tabularize /=<CR>
 vmap <leader>a= :Tabularize /=<CR>
