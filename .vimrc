@@ -1,52 +1,59 @@
 set nocompatible " be iMproved, required
-filetype off     " required
 
-" set the runtime path to include Vundle and initialize
-set rtp+=~/.vim/bundle/Vundle.vim
-call vundle#begin()
+" autoinstall vim-plug
+if empty(glob('~/.vim/autoload/plug.vim'))
+  silent !curl -fLo ~/.vim/autoload/plug.vim --create-dirs
+    \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+  autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
+endif
 
-" let Vundle manage Vundle, required
-Plugin 'VundleVim/Vundle.vim'
+" initialize vim-plug
+call plug#begin('~/.vim/bundle')
 
 " color schemes
-Plugin 'crusoexia/vim-monokai'
+Plug 'crusoexia/vim-monokai'
 
 " plugins
-Plugin 'AndrewRadev/splitjoin.vim'
-Plugin 'Quramy/tsuquyomi'
-Plugin 'Shougo/vimproc'
-Plugin 'Xuyuanp/nerdtree-git-plugin'
-Plugin 'airblade/vim-gitgutter'
-Plugin 'godlygeek/tabular'
-Plugin 'kien/ctrlp.vim'
-Plugin 'ryanoasis/vim-devicons'
-Plugin 'scrooloose/nerdtree'
-Plugin 'scrooloose/syntastic'
-Plugin 'terryma/vim-multiple-cursors'
-Plugin 'tiagofumo/vim-nerdtree-syntax-highlight'
-Plugin 'tpope/vim-commentary'
-Plugin 'tpope/vim-surround'
-Plugin 'vim-airline/vim-airline'
-Plugin 'vim-airline/vim-airline-themes'
+Plug '/usr/local/opt/fzf' | Plug 'junegunn/fzf.vim'
+Plug 'AndrewRadev/splitjoin.vim'
+Plug 'Quramy/tsuquyomi'
+Plug 'Shougo/vimproc'
+Plug 'Xuyuanp/nerdtree-git-plugin'
+Plug 'airblade/vim-gitgutter'
+Plug 'benmills/vimux'
+Plug 'godlygeek/tabular'
+Plug 'janko-m/vim-test'
+Plug 'kien/ctrlp.vim'
+Plug 'ryanoasis/vim-devicons'
+Plug 'scrooloose/nerdtree'
+Plug 'scrooloose/syntastic'
+Plug 'terryma/vim-multiple-cursors'
+Plug 'tiagofumo/vim-nerdtree-syntax-highlight'
+Plug 'tpope/vim-commentary'
+Plug 'tpope/vim-surround'
+Plug 'vim-airline/vim-airline'
+Plug 'vim-airline/vim-airline-themes'
 
 " YouCompleteMe
 if v:version > 703
-  Plugin 'Valloric/YouCompleteMe'
+  Plug 'Valloric/YouCompleteMe'
 endif
 
 " syntax files
-Plugin 'digitaltoad/vim-jade'
-Plugin 'elixir-lang/vim-elixir'
-Plugin 'elzr/vim-json'
-Plugin 'leafgarland/typescript-vim'
-Plugin 'nono/vim-handlebars'
-Plugin 'pangloss/vim-javascript'
-Plugin 'tpope/vim-markdown'
-Plugin 'voithos/vim-python-syntax'
+Plug 'digitaltoad/vim-jade'
+Plug 'elixir-lang/vim-elixir'
+Plug 'elzr/vim-json'
+Plug 'kchmck/vim-coffee-script'
+Plug 'leafgarland/typescript-vim'
+Plug 'mxw/vim-jsx'
+Plug 'nono/vim-handlebars'
+Plug 'pangloss/vim-javascript'
+Plug 'robbles/logstash.vim'
+Plug 'tpope/vim-markdown'
+Plug 'voithos/vim-python-syntax'
 
-" All of your Plugins must be added before the following line
-call vundle#end()         " required
-filetype plugin indent on " required
+" end vim-plug definition
+call plug#end()
 
 " set leader
 :let mapleader = '-'
