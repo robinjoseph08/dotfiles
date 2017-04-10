@@ -125,3 +125,7 @@ bindkey '^[OB' history-beginning-search-forward
 
 # zsh syntax highlighting
 source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+
+# Add Go to Path
+export PATH=$PATH:$(go env GOPATH)/bin
+export GOPATH=$(go env GOPATH)

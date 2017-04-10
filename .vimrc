@@ -42,6 +42,7 @@ Plugin 'nono/vim-handlebars'
 Plugin 'pangloss/vim-javascript'
 Plugin 'tpope/vim-markdown'
 Plugin 'voithos/vim-python-syntax'
+Plugin 'fatih/vim-go'
 
 " All of your Plugins must be added before the following line
 call vundle#end()                     " required
