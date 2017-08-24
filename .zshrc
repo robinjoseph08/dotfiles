@@ -126,6 +126,9 @@ bindkey '^[OB' history-beginning-search-forward
 # zsh syntax highlighting
 source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
+# Enable Elixir/Erlang REPL History
+export ERL_AFLAGS="-kernel shell_history enabled"
+
 # Add Go to Path
 export PATH=$PATH:$(go env GOPATH)/bin
 export GOPATH=$(go env GOPATH)
