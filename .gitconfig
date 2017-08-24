@@ -13,3 +13,5 @@
   show-files = show --name-only       ; Show names of files updated in last commit
 [color "diff"]
   meta = magenta
+[core]
+	hooksPath = /Users/stewart/git-hooks
