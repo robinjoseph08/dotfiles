@@ -129,3 +129,13 @@ source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 # Add Go to Path
 export PATH=$PATH:$(go env GOPATH)/bin
 export GOPATH=$(go env GOPATH)
+
+# Add Yarn to Path
+export PATH="$PATH:`yarn global bin`"
+
+# tabtab source for serverless package
+# uninstall by removing these lines or running `tabtab uninstall serverless`
+[[ -f /Users/stewart/picasso/node_modules/tabtab/.completions/serverless.zsh ]] && . /Users/stewart/picasso/node_modules/tabtab/.completions/serverless.zsh
+# tabtab source for sls package
+# uninstall by removing these lines or running `tabtab uninstall sls`
+[[ -f /Users/stewart/picasso/node_modules/tabtab/.completions/sls.zsh ]] && . /Users/stewart/picasso/node_modules/tabtab/.completions/sls.zsh
