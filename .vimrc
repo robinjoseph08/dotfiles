@@ -8,32 +8,32 @@ call vundle#begin()
 " let Vundle manage Vundle, required
 Plugin 'VundleVim/Vundle.vim'
 
-" color schemes
+" displays
 Plugin 'crusoexia/vim-monokai'
+Plugin 'vim-airline/vim-airline'
+Plugin 'vim-airline/vim-airline-themes'
+Plugin 'Xuyuanp/nerdtree-git-plugin'
+Plugin 'airblade/vim-gitgutter'
+Plugin 'scrooloose/nerdtree'
 
 " plugins
 Plugin 'ryanoasis/vim-devicons'
 Plugin 'AndrewRadev/splitjoin.vim'
 Plugin 'Quramy/tsuquyomi'
 Plugin 'Shougo/vimproc'
-Plugin 'Xuyuanp/nerdtree-git-plugin'
-Plugin 'airblade/vim-gitgutter'
 Plugin 'godlygeek/tabular'
 Plugin 'ctrlpvim/ctrlp.vim'
 Plugin 'scrooloose/nerdcommenter'
-Plugin 'scrooloose/nerdtree'
-Plugin 'scrooloose/syntastic'
 Plugin 'terryma/vim-multiple-cursors'
 Plugin 'tiagofumo/vim-nerdtree-syntax-highlight'
-Plugin 'vim-airline/vim-airline'
-Plugin 'vim-airline/vim-airline-themes'
 
-" YouCompleteMe
+" auto-completion
 if v:version > 703
   Plugin 'Valloric/YouCompleteMe'
 endif
 
 " syntax files
+Plugin 'scrooloose/syntastic'
 Plugin 'digitaltoad/vim-jade'
 Plugin 'elixir-lang/vim-elixir'
 Plugin 'elzr/vim-json'
@@ -44,6 +44,10 @@ Plugin 'tpope/vim-markdown'
 Plugin 'voithos/vim-python-syntax'
 Plugin 'fatih/vim-go'
 
+" testing
+Plugin 'janko-m/vim-test'
+Plugin 'benmills/vimux'
+
 " All of your Plugins must be added before the following line
 call vundle#end()                     " required
 
@@ -51,7 +55,6 @@ call vundle#end()                     " required
 syntax on
 set number
 set ruler
-highlight ColorColumn ctermbg=2
 set colorcolumn=121
 set autoread                          " auto read edits from outside
 set clipboard=unnamed                 " Use OS clipboard
@@ -106,6 +109,12 @@ set nobackup
 set nowritebackup
 set noswapfile
 
+" vim-test
+let test#strategy = 'vimux'
+
+nmap <silent> <leader>t :TestNearest<CR>
+nmap <silent> <leader>f :TestFile<CR>
+nmap <silent> <leader>s :TestSuite<CR>
 " nerdtree
 "autocmd FileType nerdtree setlocal nolist
 
@@ -146,6 +155,7 @@ set showcmd
 set ignorecase
 set smartcase
 set hlsearch
+highlight ColorColumn ctermbg=2
 
 " window options
 set showmode
@@ -178,6 +188,8 @@ nmap <leader>t= :Tabularize /=<CR>
 vmap <leader>t= :Tabularize /=<CR>
 nmap <leader>t: :Tabularize /:\zs<CR>
 vmap <leader>t: :Tabularize /:\zs<CR>
+nmap <leader>t, :Tabularize /,\zs<CR>
+vmap <leader>t, :Tabularize /,\zs<CR>
 
 " multiple cursor settings
 let g:multi_cursor_exit_from_visual_mode=0
