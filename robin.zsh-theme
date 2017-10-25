@@ -58,11 +58,14 @@ prompt_end() {
 ### Prompt components
 # Each component will draw itself, and hide itself if no information needs to be shown
 
-# Context: user (who am I)
-prompt_context() {
-  if [[ "$USER" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
-    prompt_segment black default "%(!.%{%F{yellow}%}.)%D{%FT%T%z}"
-  fi
+# Date: timestamp
+prompt_date() {
+  prompt_segment black default "%(!.%{%F{yellow}%}.)%D{%FT%T%z}"
+}
+
+# Convox: rack
+prompt_rack() {
+  prompt_segment magenta black $([ -e ~/.convox/rack ] && convox switch || echo unknown)
 }
 
 # Git: branch/detached head, dirty status
@@ -125,7 +128,8 @@ prompt_status() {
 build_prompt() {
   RETVAL=$?
   prompt_status
-  prompt_context
+  prompt_date
+  prompt_rack
   prompt_dir
   prompt_git
   prompt_end

@@ -19,7 +19,9 @@ FILES+=' .zshrc'
 
 # List of programs to install with brew
 BREW=''
+BREW+=' ag'
 BREW+=' cmake'
+BREW+=' fzf'
 BREW+=' reattach-to-user-namespace'
 BREW+=' tmux'
 BREW+=' tree'
@@ -52,6 +54,8 @@ if [[ $OSTYPE == darwin* ]]; then
     echo "Installing rvm..."
     \curl -sSL https://get.rvm.io | bash
   fi
+  echo "Installing fzf extensions..."
+  /usr/local/opt/fzf/install
 fi
 echo "...done"
 echo
@@ -99,6 +103,7 @@ echo
 echo "Setting up vim..."
 if [ ! -d ~/.vim/bundle/Vundle.vim ]; then
   mkdir -p ~/.vim/bundle
+  mkdir -p ~/.vim/undo
   git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
   git clone https://github.com/Valloric/YouCompleteMe.git ~/.vim/bundle/YouCompleteMe
   cd ~/.vim/bundle/YouCompleteMe
