@@ -14,4 +14,9 @@
 [color "diff"]
   meta = magenta
 [core]
-	hooksPath = /Users/stewart/git-hooks
+  hooksPath = /Users/stewart/git-hooks
+[filter "lfs"]
+  clean = git-lfs clean -- %f
+  smudge = git-lfs smudge -- %f
+  process = git-lfs filter-process
+  required = true
