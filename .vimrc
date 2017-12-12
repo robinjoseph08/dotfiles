@@ -209,3 +209,4 @@ set nohidden
 " close vim if all tabs are closed
 "autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType == "primary") | q | endif
 
+let @j = 'cc[ENG-####](https://lobsters.atlassian.net/browse/ENG-####)jk'
