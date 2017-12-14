@@ -1,57 +1,48 @@
 set nocompatible " be iMproved, required
 filetype off     " required
 
-call plug#begin('~/.vim/plugged')
+function! BuildYCM(info)
+  if a:info.status == 'installed' || a:info.force
+    !./install.sh
+  endif
+endfunction
 
-" displays
-Plug 'crusoexia/vim-monokai'
-Plug 'vim-airline/vim-airline'
-Plug 'vim-airline/vim-airline-themes'
-Plug 'Xuyuanp/nerdtree-git-plugin'
-Plug 'airblade/vim-gitgutter'
-Plug 'scrooloose/nerdtree'
-
-" plugins
-Plug 'ryanoasis/vim-devicons'
-Plug 'AndrewRadev/splitjoin.vim'
-Plug 'Quramy/tsuquyomi'
-Plug 'Shougo/vimproc'
-Plug 'godlygeek/tabular'
-Plug 'ctrlpvim/ctrlp.vim'
-Plug 'scrooloose/nerdcommenter'
-Plug 'terryma/vim-multiple-cursors'
-Plug 'tiagofumo/vim-nerdtree-syntax-highlight'
-
-" auto-completion
-"" You Complete Me
-if v:version > 703
-  function! BuildYCM(info)
-    if a:info.status == 'installed' || a:info.force
-      !./install.sh
-    endif
-  endfunction
-
-  Plug 'Valloric/YouCompleteMe', { 'do': function('BuildYCM') }
-endif
-
-" syntax files
-
-"" Syntastic
 function! Installjshint(info)
   if a:info.status == 'installed' || a:info.force
     !npm install -g jshint
   endif
 endfunction
 
-Plug 'scrooloose/syntastic', { 'do': function('Installjshint') }
+call plug#begin('~/.vim/plugged')
 
+" Aesthetic
+Plug 'crusoexia/vim-monokai'
+Plug 'vim-airline/vim-airline'
+Plug 'vim-airline/vim-airline-themes'
+Plug 'airblade/vim-gitgutter'
+Plug 'scrooloose/nerdtree'
+Plug 'Xuyuanp/nerdtree-git-plugin'
+Plug 'tiagofumo/vim-nerdtree-syntax-highlight'
+Plug 'ryanoasis/vim-devicons'
+
+" File Shortcuts
+Plug 'ctrlpvim/ctrlp.vim'
+Plug 'Shougo/vimproc.vim', {'do' : 'make'}
+
+" Code Shortcuts
+Plug 'godlygeek/tabular'
+Plug 'scrooloose/nerdcommenter'
+if v:version > 703
+  Plug 'Valloric/YouCompleteMe', { 'do': function('BuildYCM') }
+endif
+
+"" Syntax Plugs
+Plug 'scrooloose/syntastic', { 'do': function('Installjshint') }
 Plug 'digitaltoad/vim-jade'
 Plug 'elixir-lang/vim-elixir'
 Plug 'elzr/vim-json'
-Plug 'leafgarland/typescript-vim'
-Plug 'nono/vim-handlebars'
 Plug 'pangloss/vim-javascript'
-Plug 'tpope/vim-markdown'
+Plug 'plasticboy/vim-markdown' " Depends on 'godlygeek/tabular' plug.
 Plug 'voithos/vim-python-syntax'
 Plug 'fatih/vim-go'
 
