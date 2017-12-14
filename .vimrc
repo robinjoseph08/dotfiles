@@ -1,58 +1,72 @@
 set nocompatible " be iMproved, required
 filetype off     " required
 
-" set the runtime path to include Vundle and initialize
-set rtp+=~/.vim/bundle/Vundle.vim
-call vundle#begin()
-
-" let Vundle manage Vundle, required
-Plugin 'VundleVim/Vundle.vim'
+call plug#begin('~/.vim/plugged')
 
 " displays
-Plugin 'crusoexia/vim-monokai'
-Plugin 'vim-airline/vim-airline'
-Plugin 'vim-airline/vim-airline-themes'
-Plugin 'Xuyuanp/nerdtree-git-plugin'
-Plugin 'airblade/vim-gitgutter'
-Plugin 'scrooloose/nerdtree'
+Plug 'crusoexia/vim-monokai'
+Plug 'vim-airline/vim-airline'
+Plug 'vim-airline/vim-airline-themes'
+Plug 'Xuyuanp/nerdtree-git-plugin'
+Plug 'airblade/vim-gitgutter'
+Plug 'scrooloose/nerdtree'
 
 " plugins
-Plugin 'ryanoasis/vim-devicons'
-Plugin 'AndrewRadev/splitjoin.vim'
-Plugin 'Quramy/tsuquyomi'
-Plugin 'Shougo/vimproc'
-Plugin 'godlygeek/tabular'
-Plugin 'ctrlpvim/ctrlp.vim'
-Plugin 'scrooloose/nerdcommenter'
-Plugin 'terryma/vim-multiple-cursors'
-Plugin 'tiagofumo/vim-nerdtree-syntax-highlight'
+Plug 'ryanoasis/vim-devicons'
+Plug 'AndrewRadev/splitjoin.vim'
+Plug 'Quramy/tsuquyomi'
+Plug 'Shougo/vimproc'
+Plug 'godlygeek/tabular'
+Plug 'ctrlpvim/ctrlp.vim'
+Plug 'scrooloose/nerdcommenter'
+Plug 'terryma/vim-multiple-cursors'
+Plug 'tiagofumo/vim-nerdtree-syntax-highlight'
 
 " auto-completion
+"" You Complete Me
 if v:version > 703
-  Plugin 'Valloric/YouCompleteMe'
+  function! BuildYCM(info)
+    if a:info.status == 'installed' || a:info.force
+      !./install.sh
+    endif
+  endfunction
+
+  Plug 'Valloric/YouCompleteMe', { 'do': function('BuildYCM') }
 endif
 
 " syntax files
-Plugin 'scrooloose/syntastic'
-Plugin 'digitaltoad/vim-jade'
-Plugin 'elixir-lang/vim-elixir'
-Plugin 'elzr/vim-json'
-Plugin 'leafgarland/typescript-vim'
-Plugin 'nono/vim-handlebars'
-Plugin 'pangloss/vim-javascript'
-Plugin 'tpope/vim-markdown'
-Plugin 'voithos/vim-python-syntax'
-Plugin 'fatih/vim-go'
+
+"" Syntastic
+function! Installjshint(info)
+  if a:info.status == 'installed' || a:info.force
+    !npm install -g jshint
+  endif
+endfunction
+
+Plug 'scrooloose/syntastic', { 'do': function('Installjshint') }
+
+Plug 'digitaltoad/vim-jade'
+Plug 'elixir-lang/vim-elixir'
+Plug 'elzr/vim-json'
+Plug 'leafgarland/typescript-vim'
+Plug 'nono/vim-handlebars'
+Plug 'pangloss/vim-javascript'
+Plug 'tpope/vim-markdown'
+Plug 'voithos/vim-python-syntax'
+Plug 'fatih/vim-go'
 
 " testing
-Plugin 'janko-m/vim-test'
-Plugin 'benmills/vimux'
+Plug 'janko-m/vim-test'
+Plug 'benmills/vimux'
 
-" All of your Plugins must be added before the following line
-call vundle#end()                     " required
+call plug#end()
+
+" crusoexia/vim-monokai Theme
+syntax on
+colorscheme monokai
+set t_Co=256
 
 " basic config
-syntax on
 set number
 set ruler
 set colorcolumn=121
@@ -64,8 +78,6 @@ set undofile
 " fonts and icons
 set encoding=utf-8
 set guifont=Droid\ Sans\ Mono\ for\ Powerline\ Plus\ Nerd\ File\ Types:h11
-set background=dark
-set t_Co=256
 
 " Visually moves up and down (for wrapped lines)
 nnoremap k gk
@@ -115,6 +127,7 @@ let test#strategy = 'vimux'
 nmap <silent> <leader>t :TestNearest<CR>
 nmap <silent> <leader>f :TestFile<CR>
 nmap <silent> <leader>s :TestSuite<CR>
+
 " nerdtree
 "autocmd FileType nerdtree setlocal nolist
 
@@ -167,8 +180,6 @@ set laststatus=2
 
 " escape search highliting by hitting return
 nnoremap <CR> :noh<CR><CR>
-
-colorscheme monokai
 
 " remove any trailing whitespace that is in the file
 autocmd BufRead,BufWrite * if ! &bin | silent! %s/\s\+$//ge | endif
