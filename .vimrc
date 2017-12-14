@@ -37,14 +37,7 @@ if v:version > 703
 endif
 
 "" Syntax Plugs
-Plug 'scrooloose/syntastic', { 'do': function('Installjshint') }
-Plug 'digitaltoad/vim-jade'
-Plug 'elixir-lang/vim-elixir'
-Plug 'elzr/vim-json'
-Plug 'pangloss/vim-javascript'
-Plug 'plasticboy/vim-markdown' " Depends on 'godlygeek/tabular' plug.
-Plug 'voithos/vim-python-syntax'
-Plug 'fatih/vim-go'
+Plug 'sheerun/vim-polyglot'
 
 " testing
 Plug 'janko-m/vim-test'
