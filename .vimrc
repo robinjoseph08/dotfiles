@@ -26,8 +26,9 @@ Plug 'tiagofumo/vim-nerdtree-syntax-highlight'
 Plug 'ryanoasis/vim-devicons'
 
 " File Shortcuts
-Plug 'ctrlpvim/ctrlp.vim'
 Plug 'Shougo/vimproc.vim', {'do' : 'make'}
+Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
+Plug 'junegunn/fzf.vim'
 
 " Code Shortcuts
 Plug 'godlygeek/tabular'
@@ -49,6 +50,12 @@ call plug#end()
 syntax on
 colorscheme monokai
 set t_Co=256
+
+" Open .vimrc
+nnoremap <leader>ev :vsplit $MYVIMRC<cr>
+
+" Source .vimrc
+nnoremap <leader>sv :source $MYVIMRC<cr>
 
 " basic config
 set number
@@ -77,14 +84,19 @@ nnoremap L $
 vnoremap L $
 
 " better moving between windows
-map <C-j> <C-W>j
-map <C-k> <C-W>k
-map <C-h> <C-W>h
-map <C-l> <C-W>l
+noremap <C-j> <C-W>j
+noremap <C-k> <C-W>k
+noremap <C-h> <C-W>h
+noremap <C-l> <C-W>l
 
 " Move between buffers with tab and shift-tab
 nnoremap <Tab> :bnext<CR>
 nnoremap <S-Tab> :bprevious<CR>
+
+" fzf Buffers
+nnoremap <Leader>b :Buffers<CR>
+nnoremap <C-p> :Files<CR>
+"nnoremap <Leader>r :Tags<CR>
 
 " tabs/indents
 set shiftwidth=2                      " Default tab settings
