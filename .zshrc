@@ -25,7 +25,6 @@ ZSH_THEME="af-magic"
 plugins=(git)
 
 # User configuration
-
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 source $ZSH/oh-my-zsh.sh
@@ -34,7 +33,7 @@ source $ZSH/oh-my-zsh.sh
 source ~/.aliases
 source ~/.lob_aliases
 
-# editor
+# Default Editor
 export EDITOR=vim
 
 # grep
@@ -56,19 +55,11 @@ GREP_OPTIONS+=" --exclude=./public/main.min.css"
 GREP_OPTIONS+=" --exclude=./public/bundle.js"
 export GREP_OPTIONS
 
+# nodenv
+eval "$(nodenv init -)"
+
 # X11
 export PATH="$PATH:/opt/X11/bin"
-
-# nvm
-export NVM_DIR=~/.nvm
-source $NVM_DIR/nvm.sh
-
-# avn
-[[ -s "$HOME/.avn/bin/avn.sh" ]] && source "$HOME/.avn/bin/avn.sh"
-
-# rvm
-export PATH="$PATH:$HOME/.rvm/bin"
-source ~/.rvm/scripts/rvm
 
 # .inputrc
 bindkey '^[OA' history-beginning-search-backward
