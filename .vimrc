@@ -26,13 +26,13 @@ Plug 'janko-m/vim-test'
 Plug 'kien/ctrlp.vim'
 Plug 'ryanoasis/vim-devicons'
 Plug 'scrooloose/nerdtree'
-Plug 'scrooloose/syntastic'
 Plug 'terryma/vim-multiple-cursors'
 Plug 'tiagofumo/vim-nerdtree-syntax-highlight'
 Plug 'tpope/vim-commentary'
 Plug 'tpope/vim-surround'
 Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
+Plug 'w0rp/ale'
 
 " YouCompleteMe
 if v:version > 703
@@ -40,9 +40,12 @@ if v:version > 703
 endif
 
 " syntax files
+Plug 'chr4/nginx.vim'
 Plug 'digitaltoad/vim-jade'
 Plug 'elixir-lang/vim-elixir'
 Plug 'elzr/vim-json'
+Plug 'fatih/vim-go'
+Plug 'hashivim/vim-terraform'
 Plug 'kchmck/vim-coffee-script'
 Plug 'leafgarland/typescript-vim'
 Plug 'mxw/vim-jsx'
@@ -62,6 +65,7 @@ call plug#end()
 syntax on
 set number
 set ruler
+set cursorline
 highlight ColorColumn ctermbg=2
 set colorcolumn=121
 
@@ -105,15 +109,6 @@ nnoremap <C-p> :FZF --multi<CR>
 
 " fzf layout
 let g:fzf_layout = { 'down': '~30%' }
-
-" syntastic config
-let g:syntastic_check_on_open = 1
-let g:syntastic_check_on_wq = 0
-let g:syntastic_mode_map = {
-    \ 'mode': 'active',
-    \ 'passive_filetypes': ['html', 'jsx'] }
-let g:syntastic_javascript_checkers = ['eslint']
-let g:syntastic_typescript_checkers = ['tsuquyomi']
 
 " tsuquyomi config
 let g:tsuquyomi_disable_quickfix = 1
@@ -194,3 +189,12 @@ set nohidden
 " persistent undo
 set undodir=~/.vim/undo/
 set undofile
+
+" load local .vimrc
+set exrc
+set secure
+
+" terraform
+let g:terraform_align=1
+autocmd FileType terraform setlocal commentstring=#%s
+let g:terraform_fmt_on_save=1
