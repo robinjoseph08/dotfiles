@@ -46,7 +46,7 @@ ZSH_THEME="robin"
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git)
+plugins=(git npm)
 
 # User configuration
 
@@ -101,26 +101,21 @@ GREP_OPTIONS+=" --exclude-dir=node_modules"
 GREP_OPTIONS+=" --exclude-dir=coverage"
 GREP_OPTIONS+=" --exclude-dir=dist"
 GREP_OPTIONS+=" --exclude-dir=vendor"
+GREP_OPTIONS+=" --exclude-dir=_build"
+GREP_OPTIONS+=" --exclude-dir=deps"
 GREP_OPTIONS+=" --exclude=./newrelic_agent.log"
 GREP_OPTIONS+=" --exclude=./npm-shrinkwrap.json"
 GREP_OPTIONS+=" --exclude=./CHANGELOG.md"
 GREP_OPTIONS+=" --exclude=./public/main.min.css"
 GREP_OPTIONS+=" --exclude=./public/bundle.js"
+GREP_OPTIONS+=" --exclude=./public/bundle.js.map"
 export GREP_OPTIONS
 
 # X11
 export PATH="$PATH:/opt/X11/bin"
 
-# nvm
-export NVM_DIR=~/.nvm
-source $NVM_DIR/nvm.sh
-
-# avn
-[[ -s "$HOME/.avn/bin/avn.sh" ]] && source "$HOME/.avn/bin/avn.sh"
-
-# rvm
-export PATH="$PATH:$HOME/.rvm/bin"
-source ~/.rvm/scripts/rvm
+# nodenv
+eval "$(nodenv init -)"
 
 # .inputrc
 bindkey '^[OA' history-beginning-search-backward
@@ -129,6 +124,22 @@ bindkey '^[OB' history-beginning-search-forward
 # zsh syntax highlighting
 source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
+# yarn
+export PATH="$HOME/.yarn/bin:$PATH"
+
+# rvm
+export PATH="$PATH:$HOME/.rvm/bin"
+[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"
+
+# go
+export GOPATH=$HOME/go
+export PATH="$PATH:$GOPATH/bin"
+
 # fzf
 # filter out gitignored files
 export FZF_DEFAULT_COMMAND='ag --hidden --ignore .git -g ""'
+
+# convox completion
+autoload -U compinit && compinit
+autoload -U bashcompinit && bashcompinit
+source ~/.convox/completion.bash

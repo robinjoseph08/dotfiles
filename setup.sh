@@ -13,6 +13,7 @@ FILES+=' .aliases'
 FILES+=' .bash_profile'
 FILES+=' .gitconfig'
 FILES+=' .inputrc'
+FILES+=' .psqlrc'
 FILES+=' .tmux.conf'
 FILES+=' .vimrc'
 FILES+=' .zshrc'
@@ -22,6 +23,7 @@ BREW=''
 BREW+=' ag'
 BREW+=' cmake'
 BREW+=' fzf'
+BREW+=' nodenv'
 BREW+=' reattach-to-user-namespace'
 BREW+=' tmux'
 BREW+=' tree'
@@ -33,7 +35,7 @@ BREW+=' zsh-syntax-highlighting'
 
 # Checks if a file exists but isn't a symlink
 function check_file () {
-  [ -f $1 ] && [ ! -h $1 ]
+  [ -f "$1" ] && [ ! -h "$1" ]
 }
 
 echo
@@ -61,25 +63,6 @@ echo "...done"
 echo
 
 echo
-echo "Installing nvm..."
-if [ ! -d ~/.nvm ]; then
-  curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.31.4/install.sh | bash
-  export NVM_DIR="$HOME/.nvm"
-  [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-fi
-echo "...done"
-echo
-
-echo
-echo "Installing avn..."
-if [ ! -d ~/.avn ]; then
-  npm install -g avn avn-nvm
-  avn setup
-fi
-echo "...done"
-echo
-
-echo
 echo "Copying home directory dotfiles..."
 # Create directory to house current dotfiles
 # as a backup so you can restore your previous
@@ -101,10 +84,9 @@ echo
 
 echo
 echo "Setting up vim..."
-if [ ! -d ~/.vim/bundle/Vundle.vim ]; then
+if [ ! -d ~/.vim/bundle ]; then
   mkdir -p ~/.vim/bundle
   mkdir -p ~/.vim/undo
-  git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
   git clone https://github.com/Valloric/YouCompleteMe.git ~/.vim/bundle/YouCompleteMe
   cd ~/.vim/bundle/YouCompleteMe
   git submodule update --init --recursive
@@ -129,7 +111,7 @@ echo
 echo
 echo "Setting up iTerm2..."
 mkdir -p ~/Library/Application\ Support/iTerm2/DynamicProfiles
-if check_file ~/Library/Application\ Support/iTerm2/DynamicProfiles/iterm.json; then
+if check_file '~/Library/Application Support/iTerm2/DynamicProfiles/iterm.json'; then
   echo "Copying old iterm.json into $OLD_DIR..."
   cp ~/Library/Application\ Support/iTerm2/DynamicProfiles/iterm.json $OLD_DIR
 fi
