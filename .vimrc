@@ -24,11 +24,16 @@ Plug 'scrooloose/nerdtree'
 Plug 'Xuyuanp/nerdtree-git-plugin'
 Plug 'tiagofumo/vim-nerdtree-syntax-highlight'
 Plug 'ryanoasis/vim-devicons'
+Plug 'junegunn/goyo.vim'
 
 " File Shortcuts
+Plug 'mileszs/ack.vim'
 Plug 'Shougo/vimproc.vim', {'do' : 'make'}
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 Plug 'junegunn/fzf.vim'
+Plug 'tpope/vim-eunuch'
+Plug 'tpope/vim-fugitive'
+Plug 'tpope/vim-rhubarb'
 
 " Code Shortcuts
 Plug 'godlygeek/tabular'
@@ -39,6 +44,9 @@ endif
 
 "" Syntax Plugs
 Plug 'sheerun/vim-polyglot'
+Plug 'pangloss/vim-javascript'
+Plug 'jelera/vim-javascript-syntax'
+Plug 'w0rp/ale'
 
 " testing
 Plug 'janko-m/vim-test'
@@ -217,3 +225,13 @@ set nohidden
 "autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType == "primary") | q | endif
 
 let @j = 'cc[ENG-####](https://lobsters.atlassian.net/browse/ENG-####)jk'
+
+function! ProseMode()
+  call goyo#execute(0, [])
+  set spell noci nosi noai nolist noshowmode noshowcmd
+  set complete+=s
+  set bg=light
+endfunction
+
+command! ProseMode call ProseMode()
+nmap \p :ProseMode<CR>
