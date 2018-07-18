@@ -80,7 +80,7 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-# Aliases
+# aliases
 source ~/.aliases
 
 # editor
@@ -131,9 +131,22 @@ export PATH="$HOME/.yarn/bin:$PATH"
 export PATH="$PATH:$HOME/.rvm/bin"
 [[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"
 
-# go
+# aws
+export AWS_REGION=us-west-2
+
+# go and goenv
+eval "$(goenv init -)"
 export GOPATH=$HOME/go
 export PATH="$PATH:$GOPATH/bin"
+
+# kubernetes
+source <(kops completion zsh)
+source <(kubectl completion zsh)
+
+# curl
+# format to pretty-print timings
+# curl -w "$CURL_TIMINGS" -o /dev/null https://google.com
+export CURL_TIMINGS='\n            time_namelookup:  %{time_namelookup}\n               time_connect:  %{time_connect}\n            time_appconnect:  %{time_appconnect}\n           time_pretransfer:  %{time_pretransfer}\n              time_redirect:  %{time_redirect}\n         time_starttransfer:  %{time_starttransfer}\n                            ----------\n                 time_total:  %{time_total}\n\n'
 
 # fzf
 # filter out gitignored files
