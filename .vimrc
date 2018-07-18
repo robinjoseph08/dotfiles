@@ -21,6 +21,7 @@ Plug 'Shougo/vimproc'
 Plug 'Xuyuanp/nerdtree-git-plugin'
 Plug 'airblade/vim-gitgutter'
 Plug 'benmills/vimux'
+Plug 'editorconfig/editorconfig-vim'
 Plug 'godlygeek/tabular'
 Plug 'janko-m/vim-test'
 Plug 'kien/ctrlp.vim'
@@ -198,3 +199,12 @@ set secure
 let g:terraform_align=1
 autocmd FileType terraform setlocal commentstring=#%s
 let g:terraform_fmt_on_save=1
+
+" golang
+let g:go_fmt_command = "goimports"
+
+" docker
+autocmd BufNewFile,BufRead Dockerfile.* set syntax=dockerfile
+
+" yaml
+autocmd BufNewFile,BufRead *yaml.tpl set syntax=yaml
