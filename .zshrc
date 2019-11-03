@@ -147,6 +147,9 @@ export PATH="$PATH:$GOPATH/bin"
 # kubernetes
 type kubectl > /dev/null 2>&1 && source <(kubectl completion zsh)
 
+# sublime
+export PATH="/Applications/Sublime Text.app/Contents/SharedSupport/bin:$PATH"
+
 # curl
 # format to pretty-print timings
 # curl -w "$CURL_TIMINGS" -o /dev/null https://google.com
