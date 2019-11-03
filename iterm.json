@@ -362,7 +362,7 @@
     },
     "Cursor Type" : 2,
     "Blur" : false,
-    "Normal Font" : "MesloLGSNerdFontComplete---RegularForPowerline 9",
+    "Normal Font" : "MesloLGSForPowerline-Regular 10",
     "Vertical Spacing" : 1,
     "Disable Printing" : false,
     "Ansi 7 Color" : {
@@ -394,7 +394,7 @@
       "Blue Component" : 0
     },
     "Screen" : -1,
-    "Non Ascii Font" : "MesloLGSNerdFontCompleteMono---RegularForPowerline 9",
+    "Non Ascii Font" : "MesloLGSForPowerline-Regular 10",
     "Ansi 13 Color" : {
       "Green Component" : 0.8352941,
       "Red Component" : 0.8392157,

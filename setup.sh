@@ -11,6 +11,7 @@ cd $DOTFILES_DIR
 FILES=''
 FILES+=' .aliases'
 FILES+=' .bash_profile'
+FILES+=' .functions'
 FILES+=' .gitconfig'
 FILES+=' .inputrc'
 FILES+=' .psqlrc'
@@ -21,13 +22,18 @@ FILES+=' .zshrc'
 # List of programs to install with brew
 BREW=''
 BREW+=' ag'
+BREW+=' awscli'
 BREW+=' cmake'
 BREW+=' fzf'
+BREW+=' goenv'
+BREW+=' jq'
+BREW+=' neovim'
 BREW+=' nodenv'
 BREW+=' reattach-to-user-namespace'
 BREW+=' tmux'
 BREW+=' tree'
 BREW+=' vim'
+BREW+=' watch'
 BREW+=' wget'
 BREW+=' zsh'
 BREW+=' zsh-completions'
@@ -92,6 +98,8 @@ if [ ! -d ~/.vim/bundle ]; then
   git submodule update --init --recursive
   ./install.sh
   cd $DOTFILES_DIR
+  mkdir -p ~/.config/nvim
+  ln -s $DOTFILES_DIR/.vimrc ~/.config/nvim/init.vim
   vim +PluginInstall +qall
 fi
 echo "...done"

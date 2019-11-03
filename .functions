@@ -1,0 +1,15 @@
+#!/bin/bash
+
+docker_aws () {
+  if [ $# != 1 ]; then
+    echo "docker_aws error: profile required" >&2
+    return
+  fi
+
+  profile=$1
+
+  echo -n "-e AWS_ACCESS_KEY_ID=$(aws configure get aws_access_key_id --profile $profile) "
+  echo -n "-e AWS_SECRET_ACCESS_KEY=$(aws configure get aws_secret_access_key --profile $profile) "
+  echo -n "-e AWS_SESSION_TOKEN=$(aws configure get aws_session_token --profile $profile) "
+  echo -n "-e AWS_REGION=us-west-2"
+}

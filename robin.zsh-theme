@@ -65,7 +65,7 @@ prompt_date() {
 
 # Convox: rack
 prompt_rack() {
-  prompt_segment magenta black $([ -e ~/.convox/rack ] && convox switch || echo unknown)
+  prompt_segment magenta black $([ -e ~/.convox/switch ] && convox switch || echo unknown)
 }
 
 # Git: branch/detached head, dirty status
