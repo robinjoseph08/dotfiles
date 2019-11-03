@@ -1,0 +1,61 @@
+{
+    "editor.renderWhitespace": "all",
+    "editor.suggestSelection": "recentlyUsedByPrefix",
+    "explorer.autoReveal": false,
+    "files.associations": {
+        "Dockerfile.*": "dockerfile"
+    },
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true,
+    "go.addTags": {
+        "tags": "json",
+        "options": "json=",
+        "promptForTags": false,
+        "transform": "snakecase"
+    },
+    "go.formatTool": "goimports",
+    "telemetry.enableCrashReporter": false,
+    "telemetry.enableTelemetry": false,
+    "terminal.integrated.fontFamily": "Meslo LG S for Powerline",
+    "terminal.integrated.fontSize": 10,
+    "terminal.integrated.rendererType": "dom",
+    "terminal.integrated.scrollback": 100000,
+    "terminal.integrated.shell.osx": "zsh",
+    "vim.hlsearch": true,
+    "vim.insertModeKeyBindings": [
+        {
+            "before": [
+                "j",
+                "k"
+            ],
+            "after": [
+                "<Esc>"
+            ],
+            "commands": [
+                {
+                    "command": "workbench.action.files.save",
+                    "args": []
+                }
+            ]
+        },
+        {
+            "before": [
+                "k",
+                "j"
+            ],
+            "after": [
+                "<Esc>"
+            ],
+            "commands": [
+                {
+                    "command": "workbench.action.files.save",
+                    "args": []
+                }
+            ]
+        }
+    ],
+    "vim.smartcase": true,
+    "window.zoomLevel": -1,
+    "workbench.colorTheme": "Monokai",
+    "workbench.startupEditor": "newUntitledFile",
+}
