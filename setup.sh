@@ -121,9 +121,30 @@ echo "...done"
 echo
 
 echo
-echo "Installing Powerline Fonts..."
-git clone https://github.com/powerline/fonts.git --depth=1
-cd fonts
-./install.sh
-cd ..
-rm -rf fonts
+echo "Setting up VS Code..."
+mkdir -p ~/Library/Application\ Support/Code/User
+if check_file '~/Library/Application Support/Code/User/settings.json'; then
+  echo "Copying old settings.json into $OLD_DIR..."
+  cp ~/Library/Application\ Support/iTerm2/DynamicProfiles/settings.json $OLD_DIR/vscode.json
+fi
+ln -sf $DOTFILES_DIR/vscode.json ~/Library/Application\ Support/Code/User/settings.json
+echo "...done"
+echo
+
+if [ -z "$(find ~/Library/Fonts -name '*Powerline*')" ]; then
+  echo
+  echo "Installing Powerline Fonts..."
+  git clone https://github.com/powerline/fonts.git --depth=1
+  cd fonts
+  ./install.sh
+  cd ..
+  rm -rf fonts
+  echo "...done"
+  echo
+fi
+
+echo
+echo "Enabling key repeats on Mac..."
+defaults write NSGlobalDomain ApplePressAndHoldEnabled -bool false
+echo "...done"
+echo
