@@ -25,7 +25,6 @@ Plug 'editorconfig/editorconfig-vim'
 Plug 'godlygeek/tabular'
 Plug 'janko-m/vim-test'
 Plug 'kien/ctrlp.vim'
-Plug 'ryanoasis/vim-devicons'
 Plug 'scrooloose/nerdtree'
 Plug 'terryma/vim-multiple-cursors'
 Plug 'tiagofumo/vim-nerdtree-syntax-highlight'
@@ -56,6 +55,9 @@ Plug 'robbles/logstash.vim'
 Plug 'tpope/vim-markdown'
 Plug 'voithos/vim-python-syntax'
 
+" needs to be last
+Plug 'ryanoasis/vim-devicons'
+
 " end vim-plug definition
 call plug#end()
 
@@ -72,7 +74,7 @@ set colorcolumn=121
 
 " fonts and icons
 set encoding=utf8
-set guifont=Meslo\ LG\ S\ Regular\ for\ Powerline\ Nerd\ Font\ Complete\ Mono:h11
+set guifont=MesloLGSNerdFontCompleteMono---RegularForPowerline:h11
 set background=dark
 set t_Co=256
 colorscheme monokai
@@ -82,6 +84,7 @@ set expandtab
 set smarttab
 set shiftwidth=2
 set softtabstop=2
+autocmd FileType make set noexpandtab shiftwidth=8 softtabstop=0
 
 " better moving between windows
 map <C-j> <C-W>j
@@ -117,6 +120,9 @@ if !exists('g:ycm_semantic_triggers')
   let g:ycm_semantic_triggers = {}
 endif
 let g:ycm_semantic_triggers['typescript'] = ['.']
+
+" javascript config
+let g:javascript_opfirst = 1
 
 " also autosave when going to insert mode
 inoremap kj <Esc>:w<CR>
