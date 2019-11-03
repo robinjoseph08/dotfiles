@@ -145,8 +145,7 @@ export GOPATH=$HOME/go
 export PATH="$PATH:$GOPATH/bin"
 
 # kubernetes
-source <(kops completion zsh)
-source <(kubectl completion zsh)
+type kubectl > /dev/null 2>&1 && source <(kubectl completion zsh)
 
 # curl
 # format to pretty-print timings
@@ -154,27 +153,14 @@ source <(kubectl completion zsh)
 export CURL_TIMINGS='\n            time_namelookup:  %{time_namelookup}\n               time_connect:  %{time_connect}\n            time_appconnect:  %{time_appconnect}\n           time_pretransfer:  %{time_pretransfer}\n              time_redirect:  %{time_redirect}\n         time_starttransfer:  %{time_starttransfer}\n                            ----------\n                 time_total:  %{time_total}\n\n'
 
 # fzf
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 # filter out gitignored files
 export FZF_DEFAULT_COMMAND='ag --hidden --ignore .git -g ""'
 
 # convox completion
 autoload -U compinit && compinit
 autoload -U bashcompinit && bashcompinit
-source ~/.convox/completion.bash
-export PATH="/usr/local/opt/postgresql@9.6/bin:$PATH"
-export PATH="/usr/local/opt/redis@3.2/bin:$PATH"
 
 # timestamps for history
 HIST_FORMAT="'%Y-%m-%d %T:'$(echo -e '\t')"
 alias history="fc -t "$HIST_FORMAT" -il 1"
-
-# tabtab source for serverless package
-# uninstall by removing these lines or running `tabtab uninstall serverless`
-[[ -f /Users/robinjoseph/.config/yarn/global/node_modules/tabtab/.completions/serverless.zsh ]] && . /Users/robinjoseph/.config/yarn/global/node_modules/tabtab/.completions/serverless.zsh
-# tabtab source for sls package
-# uninstall by removing these lines or running `tabtab uninstall sls`
-[[ -f /Users/robinjoseph/.config/yarn/global/node_modules/tabtab/.completions/sls.zsh ]] && . /Users/robinjoseph/.config/yarn/global/node_modules/tabtab/.completions/sls.zsh
-
-# tabtab source for slss package
-# uninstall by removing these lines or running `tabtab uninstall slss`
-[[ -f /Users/robinjoseph/.config/yarn/global/node_modules/tabtab/.completions/slss.zsh ]] && . /Users/robinjoseph/.config/yarn/global/node_modules/tabtab/.completions/slss.zsh

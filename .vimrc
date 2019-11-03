@@ -4,6 +4,8 @@ set nocompatible " be iMproved, required
 if empty(glob('~/.vim/autoload/plug.vim'))
   silent !curl -fLo ~/.vim/autoload/plug.vim --create-dirs
     \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+  silent !curl -fLo ~/.local/share/nvim/site/autoload/plug.vim --create-dirs
+    \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
   autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
 endif
 
@@ -34,11 +36,6 @@ Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
 Plug 'w0rp/ale'
 
-" YouCompleteMe
-if v:version > 703
-  Plug 'Valloric/YouCompleteMe'
-endif
-
 " syntax files
 Plug 'chr4/nginx.vim'
 Plug 'digitaltoad/vim-jade'
@@ -62,7 +59,7 @@ Plug 'ryanoasis/vim-devicons'
 call plug#end()
 
 " set leader
-:let mapleader = '-'
+let mapleader = '-'
 
 " basic config
 syntax on
@@ -200,6 +197,9 @@ set undofile
 " load local .vimrc
 set exrc
 set secure
+
+" git gutter
+set updatetime=100
 
 " terraform
 let g:terraform_align=1
