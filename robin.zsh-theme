@@ -63,9 +63,11 @@ prompt_date() {
   prompt_segment black default "%(!.%{%F{yellow}%}.)%D{%FT%T%z}"
 }
 
-# Convox: rack
-prompt_rack() {
-  prompt_segment magenta black $([ -e ~/.convox/switch ] && convox switch || echo unknown)
+# Kubernetes: context
+prompt_kubernetes() {
+  if type kubectl > /dev/null 2>&1 && kubectl config current-context > /dev/null 2>&1; then
+    prompt_segment magenta black $(kubectl config current-context)
+  fi
 }
 
 # Git: branch/detached head, dirty status
@@ -129,7 +131,7 @@ build_prompt() {
   RETVAL=$?
   prompt_status
   prompt_date
-  prompt_rack
+  prompt_kubernetes
   prompt_dir
   prompt_git
   prompt_end

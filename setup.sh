@@ -21,11 +21,8 @@ FILES+=' .zshrc'
 
 # List of programs to install with brew
 BREW=''
-BREW+=' ag'
 BREW+=' awscli'
-BREW+=' cmake'
 BREW+=' fzf'
-BREW+=' goenv'
 BREW+=' jq'
 BREW+=' neovim'
 BREW+=' nodenv'
@@ -58,10 +55,6 @@ if [[ $OSTYPE == darwin* ]]; then
     curl -L https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh | sh
     chsh -s /bin/zsh
   fi
-  if [ ! -d ~/.rvm ]; then
-    echo "Installing rvm..."
-    \curl -sSL https://get.rvm.io | bash
-  fi
   echo "Installing fzf extensions..."
   /usr/local/opt/fzf/install
 fi
@@ -93,10 +86,6 @@ echo "Setting up vim..."
 if [ ! -d ~/.vim/bundle ]; then
   mkdir -p ~/.vim/bundle
   mkdir -p ~/.vim/undo
-  git clone https://github.com/Valloric/YouCompleteMe.git ~/.vim/bundle/YouCompleteMe
-  cd ~/.vim/bundle/YouCompleteMe
-  git submodule update --init --recursive
-  ./install.sh
   cd $DOTFILES_DIR
   mkdir -p ~/.config/nvim
   ln -s $DOTFILES_DIR/.vimrc ~/.config/nvim/init.vim
@@ -128,3 +117,11 @@ ln -f $DOTFILES_DIR/iterm.json ~/Library/Application\ Support/iTerm2/DynamicProf
 echo "=== Make sure you set this profile as the default one in iTerm2 ==="
 echo "...done"
 echo
+
+echo
+echo "Installing Powerline Fonts..."
+git clone https://github.com/powerline/fonts.git --depth=1
+cd fonts
+./install.sh
+cd ..
+rm -rf fonts
