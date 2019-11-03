@@ -127,3 +127,7 @@ cd fonts
 ./install.sh
 cd ..
 rm -rf fonts
+
+echo
+echo "Enabling key repeats on Mac..."
+defaults write NSGlobalDomain ApplePressAndHoldEnabled -bool false
