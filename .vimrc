@@ -200,6 +200,9 @@ set secure
 
 " git gutter
 set updatetime=100
+highlight GitGutterAdd guifg=#A6E22D guibg=#2D2E27 ctermfg=148 ctermbg=235
+highlight GitGutterChange guifg=#E6DB74 guibg=#2D2E27 ctermfg=186 ctermbg=235
+highlight GitGutterDelete guifg=#e73c50 guibg=#2D2E27 ctermfg=196 ctermbg=235
 
 " terraform
 let g:terraform_align=1
