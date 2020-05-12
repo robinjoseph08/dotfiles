@@ -6,7 +6,7 @@ User configurations that are tailored to my liking.
 
 ```bash
 cd ~
-git clone https://github.com/robinjoseph08/dotfiles.git .dotfiles
+git clone git@github.com:robinjoseph08/dotfiles.git .dotfiles
 cd .dotfiles
 ./setup.sh
 ```

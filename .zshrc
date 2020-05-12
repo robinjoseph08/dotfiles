@@ -114,25 +114,29 @@ GREP_OPTIONS+=" --exclude=./public/bundle.js"
 GREP_OPTIONS+=" --exclude=./public/bundle.js.map"
 export GREP_OPTIONS
 
+# autocompletion
+autoload -U compinit && compinit
+autoload -U bashcompinit && bashcompinit
+
 # X11
 export PATH="$PATH:/opt/X11/bin"
 
 # nodenv
-eval "$(nodenv init -)"
+type nodenv > /dev/null 2>&1 && eval "$(nodenv init -)"
+
+# rbenv
+type rbenv > /dev/null 2>&1 && eval "$(rbenv init -)"
 
 # .inputrc
 bindkey '^[OA' history-beginning-search-backward
 bindkey '^[OB' history-beginning-search-forward
 
 # zsh syntax highlighting
-source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+[ -f /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ] && source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+[ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ] && source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
 # yarn
 export PATH="$HOME/.yarn/bin:$PATH"
-
-# rvm
-export PATH="$PATH:$HOME/.rvm/bin"
-[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"
 
 # aws
 export AWS_REGION=us-west-2
@@ -159,10 +163,6 @@ export CURL_TIMINGS='\n            time_namelookup:  %{time_namelookup}\n       
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 # filter out gitignored files
 export FZF_DEFAULT_COMMAND='ag --hidden --ignore .git -g ""'
-
-# convox completion
-autoload -U compinit && compinit
-autoload -U bashcompinit && bashcompinit
 
 # timestamps for history
 HIST_FORMAT="'%Y-%m-%d %T:'$(echo -e '\t')"
