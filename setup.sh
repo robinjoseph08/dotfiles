@@ -125,7 +125,7 @@ echo "Setting up VS Code..."
 mkdir -p ~/Library/Application\ Support/Code/User
 if check_file '~/Library/Application Support/Code/User/settings.json'; then
   echo "Copying old settings.json into $OLD_DIR..."
-  cp ~/Library/Application\ Support/iTerm2/DynamicProfiles/settings.json $OLD_DIR/vscode.json
+  cp ~/Library/Application\ Support/Code/User/settings.json $OLD_DIR/vscode.json
 fi
 ln -sf $DOTFILES_DIR/vscode.json ~/Library/Application\ Support/Code/User/settings.json
 echo "...done"
