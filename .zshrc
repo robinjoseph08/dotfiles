@@ -80,6 +80,9 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
+# setup brew
+eval "$(/opt/homebrew/bin/brew shellenv)"
+
 # aliases
 source ~/.aliases
 
@@ -134,9 +137,10 @@ bindkey '^[OB' history-beginning-search-forward
 # zsh syntax highlighting
 [ -f /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ] && source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 [ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ] && source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+[ -f /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ] && source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
 # yarn
-export PATH="$HOME/.yarn/bin:$PATH"
+export PATH="$PATH:$HOME/.yarn/bin"
 
 # aws
 export AWS_REGION=us-west-2
@@ -147,6 +151,9 @@ export GOENV_DISABLE_GOPATH=1
 eval "$(goenv init -)"
 export GOPATH=$HOME/go
 export PATH="$PATH:$GOPATH/bin"
+
+# rust
+[[ -s "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env" # load rust
 
 # kubernetes
 type kubectl > /dev/null 2>&1 && source <(kubectl completion zsh)

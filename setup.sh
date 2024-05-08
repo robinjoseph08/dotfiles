@@ -25,6 +25,7 @@ BREW+=' awscli'
 BREW+=' fd'
 BREW+=' fzf'
 BREW+=' jq'
+BREW+=' kubectl'
 BREW+=' neovim'
 BREW+=' nodenv'
 BREW+=' reattach-to-user-namespace'
@@ -48,10 +49,13 @@ echo "Setting up dependencies..."
 if [[ $OSTYPE == darwin* ]]; then
   if ! type brew > /dev/null 2>&1; then
     echo "Installing brew..."
-    ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    eval "$(/opt/homebrew/bin/brew shellenv)"
   fi
   echo "Installing$BREW..."
   brew install $BREW 2> /dev/null
+  echo "Installing goenv from HEAD..."
+  brew install --HEAD goenv 2> /dev/null
   if [ ! -d ~/.oh-my-zsh ]; then
     echo "Installing Oh My Zsh..."
     curl -L https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh | sh
@@ -91,7 +95,7 @@ if [ ! -d ~/.vim/bundle ]; then
   cd $DOTFILES_DIR
   mkdir -p ~/.config/nvim
   ln -s $DOTFILES_DIR/.vimrc ~/.config/nvim/init.vim
-  vim +PluginInstall +qall
+  vim +PlugInstall +qall
 fi
 echo "...done"
 echo

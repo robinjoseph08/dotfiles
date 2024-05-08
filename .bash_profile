@@ -10,3 +10,4 @@ source $(brew --prefix nvm)/nvm.sh
 
 [[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*
 [[ -s "$HOME/.avn/bin/avn.sh" ]] && source "$HOME/.avn/bin/avn.sh" # load avn
+[[ -s "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env" # load rust

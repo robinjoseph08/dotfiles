@@ -18,9 +18,7 @@
     "telemetry.enableTelemetry": false,
     "terminal.integrated.fontFamily": "Meslo LG S for Powerline",
     "terminal.integrated.fontSize": 10,
-    "terminal.integrated.rendererType": "dom",
     "terminal.integrated.scrollback": 100000,
-    "terminal.integrated.shell.osx": "zsh",
     "vim.hlsearch": true,
     "vim.insertModeKeyBindings": [
         {
@@ -52,10 +50,68 @@
                     "args": []
                 }
             ]
+        },
+        {
+            "before": [
+                "shift+ctrl+down",
+            ],
+            "commands": [
+                {
+                    "command": "editor.action.insertCursorBelow",
+                    "args": []
+                }
+            ]
+        }
+    ],
+    "vim.visualModeKeyBindings": [
+        {
+            "before": [
+                "<C-n>"
+            ],
+            "commands": [
+                {
+                    "command": "editor.action.addSelectionToNextFindMatch",
+                    "args": []
+                }
+            ]
         }
     ],
     "vim.smartcase": true,
-    "window.zoomLevel": -1,
     "workbench.colorTheme": "Monokai",
     "workbench.startupEditor": "newUntitledFile",
+    "editor.tabSize": 2,
+    "[go]": {
+        "editor.tabSize": 8,
+        "editor.insertSpaces": false,
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+        }
+    },
+    "[javascript]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    },
+    "[typescript]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    },
+    "editor.cursorStyle": "line",
+    "editor.insertSpaces": true,
+    "editor.lineNumbers": "on",
+    "editor.wordSeparators": "/\\()\"':,.;<>~!@#$%^&*|+=[]{}`?-",
+    "editor.wordWrap": "off",
+    "explorer.confirmDelete": false,
+    "cSpell.caseSensitive": true,
+    "[typescriptreact]": {
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    },
+    "[json]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "javascript.format.enable": false,
+    "editor.codeActionsOnSave": {},
+    "eslint.format.enable": true,
+    "editor.formatOnSave": true,
+    "extensions.ignoreRecommendations": true,
 }

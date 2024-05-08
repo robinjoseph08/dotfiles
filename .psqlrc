@@ -1,1 +1,2 @@
 \x auto
+SET TIMEZONE = 'America/Chicago';
