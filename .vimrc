@@ -19,7 +19,7 @@ Plug 'crusoexia/vim-monokai'
 Plug '/usr/local/opt/fzf' | Plug 'junegunn/fzf.vim'
 Plug 'AndrewRadev/splitjoin.vim'
 Plug 'Quramy/tsuquyomi'
-Plug 'Shougo/vimproc'
+Plug 'Shougo/vimproc', {'do' : 'make'}
 Plug 'Xuyuanp/nerdtree-git-plugin'
 Plug 'airblade/vim-gitgutter'
 Plug 'benmills/vimux'

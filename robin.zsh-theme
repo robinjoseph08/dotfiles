@@ -28,6 +28,34 @@
 CURRENT_BG='NONE'
 SEGMENT_SEPARATOR=''
 
+function preexec() {
+  cmd_start=$(($(print -P %D{%s%6.}) / 1000))
+}
+
+function precmd() {
+  if [ $cmd_start ]; then
+    local now=$(($(print -P %D{%s%6.}) / 1000))
+    local d_ms=$(($now - $cmd_start))
+    local d_s=$((d_ms / 1000))
+    local ms=$((d_ms % 1000))
+    local s=$((d_s % 60))
+    local m=$(((d_s / 60) % 60))
+    local h=$((d_s / 3600))
+
+    if   ((h > 0)); then cmd_time=${h}h${m}m
+    elif ((m > 0)); then cmd_time=${m}m${s}s
+    elif ((s > 9)); then cmd_time=${s}.$(printf %03d $ms | cut -c1-2)s # 12.34s
+    elif ((s > 0)); then cmd_time=${s}.$(printf %03d $ms)s # 1.234s
+    else cmd_time=${ms}ms
+    fi
+
+    unset cmd_start
+  else
+    # Clear previous result when hitting Return with no command to execute
+    unset cmd_time
+  fi
+}
+
 # Begin a segment
 # Takes two arguments, background and foreground. Both can be omitted,
 # rendering default background/foreground.
@@ -107,6 +135,12 @@ prompt_git() {
   fi
 }
 
+prompt_duration() {
+  if [ $cmd_time ]; then
+    prompt_segment black default $cmd_time
+  fi
+}
+
 # Dir: current working directory
 prompt_dir() {
   prompt_segment blue black '%1~'
@@ -134,6 +168,7 @@ build_prompt() {
   prompt_kubernetes
   prompt_dir
   prompt_git
+  prompt_duration
   prompt_end
 }
 

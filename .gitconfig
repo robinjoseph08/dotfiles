@@ -7,3 +7,5 @@
   default = simple
 [alias]
   fixup = commit --amend -C HEAD
+  undo = !git reset HEAD~1 --soft && git reset HEAD .
+  wip = !git add . && git commit -am "wip"
