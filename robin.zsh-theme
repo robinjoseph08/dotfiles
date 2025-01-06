@@ -98,6 +98,13 @@ prompt_kubernetes() {
   fi
 }
 
+# Virtualenv: virtualenv
+prompt_virtualenv() {
+  if ! [ -z "$VIRTUAL_ENV" ]; then
+    prompt_segment cyan black $(basename "$VIRTUAL_ENV")
+  fi
+}
+
 # Git: branch/detached head, dirty status
 prompt_git() {
   local ref dirty mode repo_path
@@ -165,6 +172,7 @@ build_prompt() {
   RETVAL=$?
   prompt_status
   prompt_date
+  prompt_virtualenv
   prompt_kubernetes
   prompt_dir
   prompt_git

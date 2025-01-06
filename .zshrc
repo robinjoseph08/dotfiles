@@ -118,6 +118,7 @@ GREP_OPTIONS+=" --exclude=./public/bundle.js.map"
 export GREP_OPTIONS
 
 # autocompletion
+FPATH="$(brew --prefix)/share/zsh/site-functions:${FPATH}"
 autoload -U compinit && compinit
 autoload -U bashcompinit && bashcompinit
 
@@ -129,6 +130,13 @@ type nodenv > /dev/null 2>&1 && eval "$(nodenv init -)"
 
 # rbenv
 type rbenv > /dev/null 2>&1 && eval "$(rbenv init -)"
+
+# pyenv
+type pyenv > /dev/null 2>&1 && eval "$(pyenv init --path)"
+type pyenv > /dev/null 2>&1 && eval "$(pyenv virtualenv-init -)"
+
+# virtualenv
+export VIRTUAL_ENV_DISABLE_PROMPT=1
 
 # .inputrc
 bindkey '^[OA' history-beginning-search-backward
@@ -154,6 +162,7 @@ export PATH="$PATH:$GOPATH/bin"
 
 # rust
 [[ -s "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env" # load rust
+export PATH="$PATH:$HOME/.cargo/bin"
 
 # kubernetes
 type kubectl > /dev/null 2>&1 && source <(kubectl completion zsh)
