@@ -21,13 +21,12 @@ echo "Installing fzf extensions..."
 "$(brew --prefix)"/opt/fzf/install --key-bindings --completion --no-update-rc --no-bash --no-fish
 
 {{ else -}}
-if ! command -v apt-get &> /dev/null; then
-    echo "No supported package manager found (apt-get). Skipping package installation."
+if ! sudo apt-get update 2>&1; then
+    echo "apt-get is not available or disabled on this system. Skipping package installation."
     exit 0
 fi
 
 echo "Installing apt packages..."
-sudo apt-get update
 sudo apt-get install -y \
     curl git zsh tmux neovim vim \
     fzf ripgrep fd-find jq tree wget \
