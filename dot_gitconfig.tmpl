@@ -2,7 +2,11 @@
   name = Robin Joseph
   email = robinmjoseph08@gmail.com
 [credential]
+{{- if eq .chezmoi.os "darwin" }}
   helper = osxkeychain
+{{- else }}
+  helper = store
+{{- end }}
 [push]
   default = simple
 [alias]

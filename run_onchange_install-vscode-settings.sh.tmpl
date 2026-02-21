@@ -1,0 +1,14 @@
+#!/bin/bash
+# vscode.json hash: {{ include "vscode.json" | sha256sum }}
+set -e
+
+{{ if eq .chezmoi.os "darwin" -}}
+VSCODE_DIR="$HOME/Library/Application Support/Code/User"
+{{ else -}}
+VSCODE_DIR="$HOME/.config/Code/User"
+{{ end -}}
+
+mkdir -p "$VSCODE_DIR"
+cp {{ .chezmoi.sourceDir | quote }}/vscode.json "$VSCODE_DIR/settings.json"
+
+echo "VS Code settings deployed to $VSCODE_DIR/settings.json"

@@ -1,4 +1,8 @@
+{{- if eq .chezmoi.os "darwin" -}}
 alias ls="ls -G"
+{{- else -}}
+alias ls="ls --color=auto"
+{{- end }}
 alias gl="git log"
 alias gs="git status"
 alias ga="git add"

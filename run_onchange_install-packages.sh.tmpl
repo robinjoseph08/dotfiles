@@ -1,0 +1,61 @@
+#!/bin/bash
+set -e
+
+{{ if eq .chezmoi.os "darwin" -}}
+# Install Homebrew if missing
+if ! command -v brew &> /dev/null; then
+    echo "Installing Homebrew..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
+
+echo "Installing brew packages..."
+brew install awscli fd fzf jq kubectl neovim nodenv \
+    reattach-to-user-namespace ripgrep tmux tree vim watch wget \
+    zsh zsh-completions zsh-syntax-highlighting 2>/dev/null
+
+echo "Installing goenv from HEAD..."
+brew install --HEAD goenv 2>/dev/null
+
+echo "Installing fzf extensions..."
+"$(brew --prefix)"/opt/fzf/install --key-bindings --completion --no-update-rc --no-bash --no-fish
+
+{{ else -}}
+echo "Installing apt packages..."
+sudo apt-get update
+sudo apt-get install -y \
+    curl git zsh tmux neovim vim \
+    fzf ripgrep fd-find jq tree wget \
+    zsh-syntax-highlighting \
+    python3-pip xclip
+
+# nodenv
+if [ ! -d "$HOME/.nodenv" ]; then
+    echo "Installing nodenv..."
+    git clone https://github.com/nodenv/nodenv.git ~/.nodenv
+    mkdir -p ~/.nodenv/plugins
+    git clone https://github.com/nodenv/node-build.git ~/.nodenv/plugins/node-build
+fi
+
+# rbenv
+if [ ! -d "$HOME/.rbenv" ]; then
+    echo "Installing rbenv..."
+    git clone https://github.com/rbenv/rbenv.git ~/.rbenv
+    mkdir -p ~/.rbenv/plugins
+    git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
+fi
+
+# pyenv
+if [ ! -d "$HOME/.pyenv" ]; then
+    echo "Installing pyenv..."
+    curl https://pyenv.run | bash
+fi
+
+# goenv
+if [ ! -d "$HOME/.goenv" ]; then
+    echo "Installing goenv..."
+    git clone https://github.com/go-nv/goenv.git ~/.goenv
+fi
+
+{{ end -}}
+echo "Package installation complete."
