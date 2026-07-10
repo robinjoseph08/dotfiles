@@ -16,8 +16,7 @@ call plug#begin('~/.vim/bundle')
 Plug 'crusoexia/vim-monokai'
 
 " plugins
-Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
-Plug 'junegunn/fzf.vim'
+Plug '/usr/local/opt/fzf' | Plug 'junegunn/fzf.vim'
 Plug 'AndrewRadev/splitjoin.vim'
 Plug 'Quramy/tsuquyomi'
 Plug 'Shougo/vimproc', {'do' : 'make'}
