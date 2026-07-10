@@ -173,7 +173,7 @@ build_prompt() {
   prompt_status
   prompt_date
   prompt_virtualenv
-  prompt_kubernetes
+  # prompt_kubernetes
   prompt_dir
   prompt_git
   prompt_duration

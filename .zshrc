@@ -80,10 +80,8 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-{{ if eq .chezmoi.os "darwin" -}}
 # setup brew
 eval "$(/opt/homebrew/bin/brew shellenv)"
-{{ end -}}
 
 # aliases
 source ~/.aliases
@@ -119,25 +117,14 @@ GREP_OPTIONS+=" --exclude=./public/bundle.js"
 GREP_OPTIONS+=" --exclude=./public/bundle.js.map"
 export GREP_OPTIONS
 
-{{ if eq .chezmoi.os "darwin" -}}
 # autocompletion
 FPATH="$(brew --prefix)/share/zsh/site-functions:${FPATH}"
-{{ end -}}
 autoload -U compinit && compinit
 autoload -U bashcompinit && bashcompinit
 
-{{ if eq .chezmoi.os "darwin" -}}
 # X11
 export PATH="$PATH:/opt/X11/bin"
-{{ end -}}
 
-{{ if ne .chezmoi.os "darwin" -}}
-# Version managers installed from git (Linux)
-[ -d "$HOME/.nodenv/bin" ] && export PATH="$HOME/.nodenv/bin:$PATH"
-[ -d "$HOME/.rbenv/bin" ] && export PATH="$HOME/.rbenv/bin:$PATH"
-[ -d "$HOME/.pyenv/bin" ] && export PATH="$HOME/.pyenv/bin:$PATH"
-[ -d "$HOME/.goenv/bin" ] && export PATH="$HOME/.goenv/bin:$PATH"
-{{ end -}}
 # nodenv
 type nodenv > /dev/null 2>&1 && eval "$(nodenv init -)"
 
@@ -181,10 +168,8 @@ export PATH="$PATH:$HOME/.cargo/bin"
 # kubernetes
 type kubectl > /dev/null 2>&1 && source <(kubectl completion zsh)
 
-{{ if eq .chezmoi.os "darwin" -}}
 # sublime
 export PATH="/Applications/Sublime Text.app/Contents/SharedSupport/bin:$PATH"
-{{ end -}}
 
 # curl
 # format to pretty-print timings
@@ -193,10 +178,6 @@ export CURL_TIMINGS='\n            time_namelookup:  %{time_namelookup}\n       
 
 # fzf
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-{{ if ne .chezmoi.os "darwin" -}}
-[ -f /usr/share/doc/fzf/examples/key-bindings.zsh ] && source /usr/share/doc/fzf/examples/key-bindings.zsh
-[ -f /usr/share/doc/fzf/examples/completion.zsh ] && source /usr/share/doc/fzf/examples/completion.zsh
-{{ end -}}
 # filter out gitignored files
 export FZF_DEFAULT_COMMAND='rg --files --hidden --glob "!.git"'
 
@@ -214,3 +195,7 @@ setopt HIST_EXPIRE_DUPS_FIRST
 
 # local binaries
 [[ -s "$HOME/.local/bin/env" ]] && source "$HOME/.local/bin/env"
+
+# export ANTHROPIC_MODEL=claude-opus-4-6
+# export CLAUDE_CODE_EFFORT_LEVEL=max
+export CLAUDE_CODE_NO_FLICKER=1
