@@ -195,3 +195,7 @@ setopt HIST_EXPIRE_DUPS_FIRST
 
 # local binaries
 [[ -s "$HOME/.local/bin/env" ]] && source "$HOME/.local/bin/env"
+
+# export ANTHROPIC_MODEL=claude-opus-4-6
+# export CLAUDE_CODE_EFFORT_LEVEL=max
+export CLAUDE_CODE_NO_FLICKER=1
