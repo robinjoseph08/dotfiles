@@ -157,7 +157,7 @@ export AWS_REGION=us-west-2
 export GOENV_DISABLE_GOROOT=1
 export GOENV_DISABLE_GOPATH=1
 export GOENV_PATH_ORDER=front
-eval "$(goenv init -)"
+type goenv > /dev/null 2>&1 && eval "$(goenv init -)"
 export GOPATH=$HOME/go
 export PATH="$PATH:$GOPATH/bin"
 
@@ -179,7 +179,7 @@ export CURL_TIMINGS='\n            time_namelookup:  %{time_namelookup}\n       
 # fzf
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 # filter out gitignored files
-export FZF_DEFAULT_COMMAND='ag --hidden --ignore .git -g ""'
+export FZF_DEFAULT_COMMAND='rg --files --hidden --glob "!.git"'
 
 # history
 export HISTFILE=~/.zsh_history
