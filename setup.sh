@@ -112,6 +112,17 @@ echo "...done"
 echo
 
 echo
+echo "Setting up herdr..."
+mkdir -p ~/.config/herdr
+if check_file ~/.config/herdr/config.toml; then
+  echo "Copying old herdr config.toml into $OLD_DIR/herdr.toml..."
+  cp ~/.config/herdr/config.toml $OLD_DIR/herdr.toml
+fi
+ln -sf $DOTFILES_DIR/herdr.toml ~/.config/herdr/config.toml
+echo "...done"
+echo
+
+echo
 echo "Setting up iTerm2..."
 mkdir -p ~/Library/Application\ Support/iTerm2/DynamicProfiles
 if check_file '~/Library/Application Support/iTerm2/DynamicProfiles/iterm.json'; then

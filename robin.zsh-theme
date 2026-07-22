@@ -86,6 +86,13 @@ prompt_end() {
 ### Prompt components
 # Each component will draw itself, and hide itself if no information needs to be shown
 
+# Hostname: shown for SSH sessions
+prompt_hostname() {
+  if [[ -n "$SSH_CONNECTION" ]]; then
+    prompt_segment 6 black '%m'
+  fi
+}
+
 # Date: timestamp
 prompt_date() {
   prompt_segment black default "%(!.%{%F{yellow}%}.)%D{%FT%T%z}"
@@ -170,6 +177,7 @@ prompt_status() {
 ## Main prompt
 build_prompt() {
   RETVAL=$?
+  prompt_hostname
   prompt_status
   prompt_date
   prompt_virtualenv
