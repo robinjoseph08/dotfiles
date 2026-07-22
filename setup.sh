@@ -113,12 +113,25 @@ echo
 
 echo
 echo "Setting up herdr..."
-mkdir -p ~/.config/herdr
+if ! mkdir -p ~/.config/herdr; then
+  echo "Could not create ~/.config/herdr; leaving the existing config untouched." >&2
+  exit 1
+fi
+if [ -d ~/.config/herdr/config.toml ]; then
+  echo "~/.config/herdr/config.toml is a directory; leaving it untouched." >&2
+  exit 1
+fi
 if check_file ~/.config/herdr/config.toml; then
   echo "Copying old herdr config.toml into $OLD_DIR/herdr.toml..."
-  cp ~/.config/herdr/config.toml $OLD_DIR/herdr.toml
+  if ! cp ~/.config/herdr/config.toml $OLD_DIR/herdr.toml; then
+    echo "Could not back up the existing herdr config; leaving it untouched." >&2
+    exit 1
+  fi
 fi
-ln -sf $DOTFILES_DIR/herdr.toml ~/.config/herdr/config.toml
+if ! ln -sf $DOTFILES_DIR/herdr.toml ~/.config/herdr/config.toml; then
+  echo "Could not link the herdr config." >&2
+  exit 1
+fi
 echo "...done"
 echo
 
