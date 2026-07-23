@@ -173,7 +173,20 @@ test("formats discovered files as scoped project instructions", () => {
     { content: "Run tests.", path: "/repo/package/app/CLAUDE.md" },
   ]);
 
-  assert.match(formatted, /Each file applies only to its containing directory and descendants\./);
-  assert.match(formatted, /<project_instructions path="\/repo\/package\/AGENTS\.md">\nUse pnpm\./);
-  assert.match(formatted, /<project_instructions path="\/repo\/package\/app\/CLAUDE\.md">\nRun tests\./);
+  assert.equal(
+    formatted,
+    `<project_context>
+
+Project-specific instructions discovered in nested directories are below. Each file applies only to its containing directory and descendants.
+
+<project_instructions path="/repo/package/AGENTS.md">
+Use pnpm.
+</project_instructions>
+
+<project_instructions path="/repo/package/app/CLAUDE.md">
+Run tests.
+</project_instructions>
+
+</project_context>`,
+  );
 });

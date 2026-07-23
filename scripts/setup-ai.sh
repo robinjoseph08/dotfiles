@@ -80,6 +80,75 @@ copy_if_missing() {
   cp "$source" "$destination"
 }
 
+require_source_file() {
+  local path=$1
+
+  if [ ! -f "$path" ]; then
+    echo "Required AI configuration file is missing: $path" >&2
+    exit 1
+  fi
+}
+
+require_source_directory() {
+  local path=$1
+
+  if [ ! -d "$path" ]; then
+    echo "Required AI configuration directory is missing: $path" >&2
+    exit 1
+  fi
+}
+
+validate_single_json_object() {
+  local path=$1
+
+  if ! jq -s -e 'length == 1 and (.[0] | type == "object")' "$path" >/dev/null; then
+    echo "Expected one JSON object in $path." >&2
+    exit 1
+  fi
+}
+
+preflight_sources() {
+  local path
+
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "jq is required to set up AI tools." >&2
+    exit 1
+  fi
+
+  for path in \
+    "$AI_DIR/CLAUDE.md" \
+    "$AI_DIR/claude/settings.json" \
+    "$AI_DIR/claude/statusline.sh" \
+    "$AI_DIR/claude/commands/squash-merge-worktree.md" \
+    "$AI_DIR/pi/AGENTS.md" \
+    "$AI_DIR/pi/settings.json" \
+    "$AI_DIR/pi/keybindings.json" \
+    "$AI_DIR/pi/themes/robin-iterm.json" \
+    "$AI_DIR/pi/extensions/claude-style-footer/index.ts" \
+    "$AI_DIR/pi/extensions/history-search/index.ts" \
+    "$AI_DIR/pi/extensions/inline-skills/index.ts" \
+    "$AI_DIR/pi/extensions/nested-context-files/index.ts" \
+    "$AI_DIR/skills/ship-it/SKILL.md"; do
+    require_source_file "$path"
+  done
+
+  for path in \
+    "$AI_DIR/skills" \
+    "$AI_DIR/claude/commands" \
+    "$AI_DIR/pi/extensions" \
+    "$AI_DIR/pi/themes"; do
+    require_source_directory "$path"
+  done
+
+  validate_single_json_object "$AI_DIR/claude/settings.json"
+  validate_single_json_object "$AI_DIR/pi/settings.json"
+  validate_single_json_object "$AI_DIR/pi/keybindings.json"
+
+  for path in "$AI_DIR/pi/themes"/*.json; do
+    validate_single_json_object "$path"
+  done
+}
+
 preflight_json_settings() {
   local source=$1
   local destination=$2
@@ -88,14 +157,8 @@ preflight_json_settings() {
     return
   fi
 
-  if ! command -v jq >/dev/null 2>&1; then
-    echo "jq is required to merge $destination." >&2
-    exit 1
-  fi
-
-  if ! jq -e 'type == "object"' "$source" >/dev/null ||
-     ! jq -e 'type == "object"' "$destination" >/dev/null ||
-     ! jq -s '.[0] * .[1]' "$destination" "$source" >/dev/null; then
+  validate_single_json_object "$destination"
+  if ! jq -s -e 'length == 2 and (.[0] * .[1] | type == "object")' "$destination" "$source" >/dev/null; then
     echo "Could not merge $destination; leaving all AI configuration untouched." >&2
     exit 1
   fi
@@ -109,11 +172,6 @@ merge_json_settings() {
   if [ ! -e "$destination" ] && [ ! -L "$destination" ]; then
     copy_if_missing "$source" "$destination"
     return
-  fi
-
-  if ! command -v jq >/dev/null 2>&1; then
-    echo "jq is required to merge $destination." >&2
-    exit 1
   fi
 
   temporary=$(mktemp)
@@ -133,6 +191,7 @@ merge_json_settings() {
   mv "$temporary" "$destination"
 }
 
+preflight_sources
 preflight_json_settings "$AI_DIR/pi/settings.json" "$HOME/.pi/agent/settings.json"
 
 echo

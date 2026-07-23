@@ -4,9 +4,10 @@ import { dirname } from "node:path";
 import { stripFrontmatter, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { fuzzyFilter, type AutocompleteItem } from "@earendil-works/pi-tui";
 
+import { transformInlineSkills } from "./transform.ts";
+
 const MAX_SUGGESTIONS = 20;
 const SKILL_COMMAND_PREFIX = "skill:";
-const INLINE_SKILL_PATTERN = /(^|\s)\/skill:([a-z0-9-]+)(?=$|\s)/g;
 
 type InlineSkill = {
   commandName: string;
@@ -102,35 +103,10 @@ export default function inlineSkills(pi: ExtensionAPI): void {
   });
 
   pi.on("input", (event, ctx) => {
-    const matches = [...event.text.matchAll(INLINE_SKILL_PATTERN)];
-    const hasInlineInvocation = matches.some((match) => {
-      const invocationOffset = (match.index ?? 0) + (match[1]?.length ?? 0);
-      return invocationOffset > 0;
-    });
-
-    if (!hasInlineInvocation) return { action: "continue" };
-
     const skills = new Map(getSkills(pi).map((skill) => [skill.name, skill]));
-    const failedSkills = new Set<string>();
-    let changed = false;
-
-    const text = event.text.replace(INLINE_SKILL_PATTERN, (original, boundary: string, name: string) => {
-      const skill = skills.get(name);
-      if (!skill) return original;
-
-      try {
-        changed = true;
-        return `${boundary}${formatSkillBlock(skill)}`;
-      } catch (error) {
-        if (!failedSkills.has(name)) {
-          failedSkills.add(name);
-          const message = error instanceof Error ? error.message : String(error);
-          ctx.ui.notify(`inline-skills: failed to load ${name}: ${message}`, "error");
-        }
-        return original;
-      }
+    return transformInlineSkills(event.text, skills, formatSkillBlock, (name, error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      ctx.ui.notify(`inline-skills: failed to load ${name}: ${message}`, "error");
     });
-
-    return changed ? { action: "transform", text } : { action: "continue" };
   });
 }

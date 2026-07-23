@@ -17,7 +17,7 @@ To install only the shared AI configuration:
 ./scripts/setup-ai.sh
 ```
 
-The standalone AI setup requires `jq` when updating an existing Pi settings file.
+The standalone AI setup requires `jq`.
 
 ## What does it do?
 

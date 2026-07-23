@@ -13,15 +13,7 @@ import {
   truncateToWidth,
 } from "@earendil-works/pi-tui";
 
-type HistoryScope = "everywhere" | "project" | "session";
-
-type HistoryItem = {
-  cwd: string;
-  sessionId: string;
-  sessionPath: string;
-  text: string;
-  timestamp: number;
-};
+import { filterHistoryItems, type HistoryItem, type HistoryScope } from "./filter.ts";
 
 type CachedSession = {
   cwd: string;
@@ -219,10 +211,6 @@ async function refreshHistory(ctx: ExtensionContext, signal: AbortSignal): Promi
   return history.sort((left, right) => right.timestamp - left.timestamp);
 }
 
-function normalizedProjectPath(path: string): string {
-  return resolve(path || ".");
-}
-
 function formatProject(cwd: string): string {
   return cwd ? basename(cwd) || cwd : "unknown";
 }
@@ -271,17 +259,11 @@ class HistorySearchComponent implements Component, Focusable {
   }
 
   private filteredHistory(): HistoryItem[] {
-    const currentProject = normalizedProjectPath(this.projectCwd);
-    const query = this.input.getValue().trim().toLocaleLowerCase();
-    const seen = new Set<string>();
-
-    return this.history.filter((item) => {
-      if (this.scope === "project" && normalizedProjectPath(item.cwd) !== currentProject) return false;
-      if (this.scope === "session" && item.sessionId !== this.currentSessionId) return false;
-      if (query && !item.text.replace(/\s+/g, " ").toLocaleLowerCase().includes(query)) return false;
-      if (seen.has(item.text)) return false;
-      seen.add(item.text);
-      return true;
+    return filterHistoryItems(this.history, {
+      currentSessionId: this.currentSessionId,
+      projectCwd: this.projectCwd,
+      query: this.input.getValue(),
+      scope: this.scope,
     });
   }
 

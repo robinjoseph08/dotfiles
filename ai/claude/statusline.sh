@@ -20,34 +20,38 @@ if [ -n "$effort_level" ]; then
     model_short="$model_short ($effort_level)"
 fi
 
-# Calculate current context window usage
-if [ "$usage" != "null" ]; then
-    # Get current context tokens (input + cache creation + cache read)
-    current=$(echo "$usage" | jq '.input_tokens + .cache_creation_input_tokens + .cache_read_input_tokens')
-
-    # Calculate percentage
-    pct=$((current * 100 / context_window_size))
-
-    # Format token count (e.g., 19000 -> "19k")
-    if [ "$current" -ge 1000 ]; then
-        current_k=$((current / 1000))
-        current_display="${current_k}k"
-    else
-        current_display="$current"
-    fi
-
-    # Format total size (e.g., 200000 -> "200k")
-    if [ "$context_window_size" -ge 1000 ]; then
-        size_k=$((context_window_size / 1000))
-        size_display="${size_k}k"
-    else
-        size_display="$context_window_size"
-    fi
-
-    context_info="ctx:$pct% ($current_display/$size_display)"
-else
-    context_info="ctx:0% (0/200k)"
+# Calculate current context window usage.
+if ! [[ "$context_window_size" =~ ^[0-9]+$ ]] || [ "$context_window_size" -le 0 ]; then
+    context_window_size=200000
 fi
+
+current=0
+if [ "$usage" != "null" ]; then
+    current=$(echo "$usage" | jq -r '
+        [.input_tokens // 0, .cache_creation_input_tokens // 0, .cache_read_input_tokens // 0]
+        | if all(.[]; type == "number" and . >= 0) then (add | floor) else 0 end
+    ')
+fi
+
+pct=$((current * 100 / context_window_size))
+
+# Format token count (e.g., 19000 -> "19k")
+if [ "$current" -ge 1000 ]; then
+    current_k=$((current / 1000))
+    current_display="${current_k}k"
+else
+    current_display="$current"
+fi
+
+# Format total size (e.g., 200000 -> "200k")
+if [ "$context_window_size" -ge 1000 ]; then
+    size_k=$((context_window_size / 1000))
+    size_display="${size_k}k"
+else
+    size_display="$context_window_size"
+fi
+
+context_info="ctx:$pct% ($current_display/$size_display)"
 
 # Get git branch (skip optional locks to avoid blocking)
 # In worktrees, .git is a file, not a directory

@@ -141,25 +141,25 @@ echo
 
 echo
 echo "Setting up iTerm2..."
-mkdir -p ~/Library/Application\ Support/iTerm2/DynamicProfiles
-if check_file '~/Library/Application Support/iTerm2/DynamicProfiles/iterm.json'; then
+mkdir -p "$HOME/Library/Application Support/iTerm2/DynamicProfiles"
+if check_file "$HOME/Library/Application Support/iTerm2/DynamicProfiles/iterm.json"; then
   echo "Copying old iterm.json into $OLD_DIR..."
-  cp ~/Library/Application\ Support/iTerm2/DynamicProfiles/iterm.json $OLD_DIR
+  cp "$HOME/Library/Application Support/iTerm2/DynamicProfiles/iterm.json" "$OLD_DIR"
 fi
 # This must be a hard link because iTerm can't read symlinks
-ln -f $DOTFILES_DIR/iterm.json ~/Library/Application\ Support/iTerm2/DynamicProfiles
+ln -f "$DOTFILES_DIR/iterm.json" "$HOME/Library/Application Support/iTerm2/DynamicProfiles"
 echo "=== Make sure you set this profile as the default one in iTerm2 ==="
 echo "...done"
 echo
 
 echo
 echo "Setting up VS Code..."
-mkdir -p ~/Library/Application\ Support/Code/User
-if check_file '~/Library/Application Support/Code/User/settings.json'; then
+mkdir -p "$HOME/Library/Application Support/Code/User"
+if check_file "$HOME/Library/Application Support/Code/User/settings.json"; then
   echo "Copying old settings.json into $OLD_DIR..."
-  cp ~/Library/Application\ Support/Code/User/settings.json $OLD_DIR/vscode.json
+  cp "$HOME/Library/Application Support/Code/User/settings.json" "$OLD_DIR/vscode.json"
 fi
-ln -sf $DOTFILES_DIR/vscode.json ~/Library/Application\ Support/Code/User/settings.json
+ln -sf "$DOTFILES_DIR/vscode.json" "$HOME/Library/Application Support/Code/User/settings.json"
 echo "...done"
 echo
 
