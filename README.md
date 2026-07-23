@@ -11,20 +11,26 @@ cd .dotfiles
 ./setup.sh
 ```
 
+To install only the shared AI configuration:
+
+```bash
+./scripts/setup-ai.sh
+```
+
+The standalone AI setup requires `jq` when updating an existing Pi settings file.
+
 ## What does it do?
 
-* Installs necessary dependencies
-  * Homebrew
-  * tmux
-  * vim
-  * zsh
-  * [Oh My Zsh](https://github.com/robbyrussell/oh-my-zsh)
-  * [rvm](http://rvm.io/)
-  * [nvm](https://github.com/creationix/nvm)
-* Copies old dot files that aren't symlinks
-* Symlinks new dot files
-* Sets up vim and all the plugins
-* Sets up zsh
+* Installs command-line dependencies with Homebrew
+* Backs up existing configuration under `old/`
+* Symlinks shell, terminal, editor, and application configuration
+* Sets up Vim, Neovim, Zsh, iTerm2, VS Code, and Herdr
+* Sets up shared AI instructions and skills
+* Sets up Claude Code settings, commands, and status line
+* Sets up Pi settings, packages, keybindings, extensions, and themes
+* Makes shared skills available to Codex
+
+See [`ai/README.md`](ai/README.md) for what is shared and what intentionally remains local.
 
 ## Platforms supported
 

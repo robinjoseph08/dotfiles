@@ -27,8 +27,8 @@ BREW+=' fzf'
 BREW+=' herdr'
 BREW+=' jq'
 BREW+=' kubectl'
+BREW+=' mise'
 BREW+=' neovim'
-BREW+=' nodenv'
 BREW+=' reattach-to-user-namespace'
 BREW+=' ripgrep'
 BREW+=' tmux'
@@ -55,8 +55,6 @@ if [[ $OSTYPE == darwin* ]]; then
   fi
   echo "Installing$BREW..."
   brew install $BREW 2> /dev/null
-  echo "Installing goenv from HEAD..."
-  brew install --HEAD goenv 2> /dev/null
   if [ ! -d ~/.oh-my-zsh ]; then
     echo "Installing Oh My Zsh..."
     curl -L https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh | sh
@@ -87,6 +85,11 @@ for f in $FILES; do
 done
 echo "...done"
 echo
+
+if ! "$DOTFILES_DIR/scripts/setup-ai.sh"; then
+  echo "Could not set up AI tools." >&2
+  exit 1
+fi
 
 echo
 echo "Setting up vim..."

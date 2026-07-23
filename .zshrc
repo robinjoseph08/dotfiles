@@ -82,6 +82,11 @@ source $ZSH/oh-my-zsh.sh
 
 # setup brew
 eval "$(/opt/homebrew/bin/brew shellenv)"
+export HOMEBREW_NO_ASK=1
+export HOMEBREW_NO_REQUIRE_TAP_TRUST=1
+
+# mise
+eval "$(mise activate zsh)"
 
 # aliases
 source ~/.aliases
@@ -125,9 +130,6 @@ autoload -U bashcompinit && bashcompinit
 # X11
 export PATH="$PATH:/opt/X11/bin"
 
-# nodenv
-type nodenv > /dev/null 2>&1 && eval "$(nodenv init -)"
-
 # rbenv
 type rbenv > /dev/null 2>&1 && eval "$(rbenv init -)"
 
@@ -153,11 +155,7 @@ export PATH="$PATH:$HOME/.yarn/bin"
 # aws
 export AWS_REGION=us-west-2
 
-# go and goenv
-export GOENV_DISABLE_GOROOT=1
-export GOENV_DISABLE_GOPATH=1
-export GOENV_PATH_ORDER=front
-type goenv > /dev/null 2>&1 && eval "$(goenv init -)"
+# go
 export GOPATH=$HOME/go
 export PATH="$PATH:$GOPATH/bin"
 

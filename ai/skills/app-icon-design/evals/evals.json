@@ -1,0 +1,49 @@
+{
+  "skill_name": "app-icon-design",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "im building an electron app called Ledgerline, it's a personal budgeting tool that tracks accounts over time (double-entry style). can you design the app icon for it? brand color is indigo, the ui is dark. i need everything the app will use: mac icns, windows ico, a big linux png, and some small-size previews so i can check it's still legible tiny.",
+      "expected_output": "A concept-driven geometric icon: master SVG (no filters, ~22.5% corner radius), valid 10-entry icns with Apple margin, 6-frame ico, 1024 png, small-size previews, and evidence of variant comparison.",
+      "files": [],
+      "assertions": [
+        "Master SVG file exists and contains no SVG filter primitives (no feGaussianBlur, feDropShadow, or filter elements)",
+        "Rounded-tile corner radius is between 20% and 24% of the canvas edge",
+        "A valid icon.icns is produced containing all ten standard iconset entries",
+        "The icns artwork has the Apple margin: the outer ~5% border of the largest icns entry is fully transparent",
+        "icon.ico contains the frames 256, 128, 64, 48, 32, and 16",
+        "Small-size preview renders at 64px or below exist among the outputs",
+        "At least two design variants or a side-by-side comparison sheet were produced"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "my uptime monitoring saas is called Driftwatch. the landing page needs a real favicon setup: svg favicon, ico fallback, apple touch icon, and pwa manifest icons (including whatever android needs for maskable). brand is amber on a dark theme. include the html head snippet i should paste in.",
+      "expected_output": "SVG favicon, favicon.ico (32+16), fully opaque 180x180 apple-touch-icon, 192/512 PWA icons, a maskable variant with safe-zone content, manifest JSON, and a correct HTML head snippet.",
+      "files": [],
+      "assertions": [
+        "An SVG favicon is produced",
+        "favicon.ico contains 32 and 16 pixel frames",
+        "apple-touch-icon.png is exactly 180x180 and fully opaque (alpha channel absent or unused)",
+        "PWA icons at 192 and 512 pixels exist",
+        "A maskable icon variant exists and the manifest or snippet declares purpose maskable",
+        "An HTML head snippet links the SVG favicon, the ico fallback, the apple-touch-icon, and the manifest"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "im making a habit tracker called Emberloop (electron app + companion pwa). i want an icon in a coral/ember palette. i specifically need BOTH light and dark tile variants (the app has both themes), plus a flat two-color version (single mark color on the background color) that i can use for android themed icons and stickers. show me proof it still reads at 16px and that the flat one doesn't turn to mush.",
+      "expected_output": "Light and dark tiles from one geometry, a two-color mono variant with weave notches at crossings, 16px legibility evidence for both full-color and flat versions.",
+      "files": [],
+      "assertions": [
+        "Light and dark tile variants both exist among the outputs",
+        "Light and dark variants share identical mark geometry (only fills differ between their SVGs)",
+        "A flat mono variant SVG exists using at most two distinct fill colors",
+        "The flat variant keeps overlaps/crossings legible via background-colored gaps or merged silhouettes (visual check)",
+        "Small-size renders at 32px or below exist, including evidence for the flat variant",
+        "Tile corner radius is between 20% and 24% of the canvas edge",
+        "No SVG filter elements in any produced SVG"
+      ]
+    }
+  ]
+}
