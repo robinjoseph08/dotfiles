@@ -81,9 +81,12 @@ source $ZSH/oh-my-zsh.sh
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
 # setup brew
-eval "$(/opt/homebrew/bin/brew shellenv)"
+if [[ -x /opt/homebrew/bin/brew ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -x /usr/local/bin/brew ]]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+fi
 export HOMEBREW_NO_ASK=1
-export HOMEBREW_NO_REQUIRE_TAP_TRUST=1
 
 # mise
 eval "$(mise activate zsh)"

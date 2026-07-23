@@ -4,9 +4,6 @@
 DOTFILES_DIR=~/.dotfiles
 OLD_DIR=$DOTFILES_DIR/old
 
-# Ensure we're in the dotfiles directory
-cd $DOTFILES_DIR
-
 # List of dotfiles for home directory
 FILES=''
 FILES+=' .aliases'
@@ -24,13 +21,14 @@ BREW=''
 BREW+=' awscli'
 BREW+=' fd'
 BREW+=' fzf'
+BREW+=' gh'
 BREW+=' herdr'
 BREW+=' jq'
-BREW+=' kubectl'
 BREW+=' mise'
 BREW+=' neovim'
 BREW+=' reattach-to-user-namespace'
 BREW+=' ripgrep'
+BREW+=' robinjoseph08/tap/wktr'
 BREW+=' tmux'
 BREW+=' tree'
 BREW+=' vim'
@@ -45,23 +43,105 @@ function check_file () {
   [ -f "$1" ] && [ ! -h "$1" ]
 }
 
+# Adds an existing Homebrew installation to this process.
+function setup_brew_environment () {
+  local brew_path
+  local shellenv
+
+  for brew_path in ${HOMEBREW_PATHS:-/opt/homebrew/bin/brew /usr/local/bin/brew}; do
+    [ -x "$brew_path" ] || continue
+    if shellenv="$($brew_path shellenv)" && eval "$shellenv"; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+function setup_homebrew_dependencies () {
+  if ! type brew > /dev/null 2>&1 && ! setup_brew_environment; then
+    echo "Installing brew..."
+    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    if ! setup_brew_environment; then
+      echo "Could not find Homebrew after installation." >&2
+      exit 1
+    fi
+  fi
+
+  BREW_INSTALL_ARGS=''
+  if brew install --help 2>&1 | grep -q -- '--no-ask'; then
+    BREW_INSTALL_ARGS='--no-ask'
+  else
+    export HOMEBREW_NO_ASK=1
+  fi
+
+  if brew help trust > /dev/null 2>&1; then
+    echo "Trusting the robinjoseph08/tap tap..."
+    if ! brew trust --tap robinjoseph08/tap; then
+      echo "Could not trust robinjoseph08/tap." >&2
+      exit 1
+    fi
+  else
+    # Compatibility for Homebrew versions without the explicit trust command.
+    export HOMEBREW_NO_REQUIRE_TAP_TRUST=1
+  fi
+
+  echo "Installing$BREW..."
+  if ! brew install $BREW_INSTALL_ARGS $BREW; then
+    echo "Could not install Homebrew dependencies." >&2
+    exit 1
+  fi
+}
+
+function setup_fzf_extensions () {
+  local fzf_prefix
+
+  if ! fzf_prefix="$(brew --prefix fzf)" || ! "$fzf_prefix/install"; then
+    echo "Could not install fzf shell extensions." >&2
+    exit 1
+  fi
+}
+
+function setup_wktr () {
+  if ! mkdir -p ~/.config/wktr; then
+    echo "Could not create ~/.config/wktr; leaving the existing config untouched." >&2
+    exit 1
+  fi
+  if [ -d ~/.config/wktr/config.yaml ]; then
+    echo "~/.config/wktr/config.yaml is a directory; leaving it untouched." >&2
+    exit 1
+  fi
+  if check_file ~/.config/wktr/config.yaml; then
+    echo "Copying old wktr config.yaml into $OLD_DIR/wktr.yaml..."
+    if ! cp ~/.config/wktr/config.yaml $OLD_DIR/wktr.yaml; then
+      echo "Could not back up the existing wktr config; leaving it untouched." >&2
+      exit 1
+    fi
+  fi
+  if ! ln -sf $DOTFILES_DIR/wktr.yaml ~/.config/wktr/config.yaml; then
+    echo "Could not link the wktr config." >&2
+    exit 1
+  fi
+}
+
+if [[ ${BASH_SOURCE[0]} != "$0" ]]; then
+  return 0
+fi
+
+# Ensure we're in the dotfiles directory
+cd $DOTFILES_DIR
+
 echo
 echo "Setting up dependencies..."
 if [[ $OSTYPE == darwin* ]]; then
-  if ! type brew > /dev/null 2>&1; then
-    echo "Installing brew..."
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    eval "$(/opt/homebrew/bin/brew shellenv)"
-  fi
-  echo "Installing$BREW..."
-  brew install $BREW 2> /dev/null
+  setup_homebrew_dependencies
   if [ ! -d ~/.oh-my-zsh ]; then
     echo "Installing Oh My Zsh..."
     curl -L https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh | sh
     chsh -s /bin/zsh
   fi
   echo "Installing fzf extensions..."
-  /usr/local/opt/fzf/install
+  setup_fzf_extensions
 fi
 echo "...done"
 echo
@@ -136,6 +216,12 @@ if ! ln -sf $DOTFILES_DIR/herdr.toml ~/.config/herdr/config.toml; then
   echo "Could not link the herdr config." >&2
   exit 1
 fi
+echo "...done"
+echo
+
+echo
+echo "Setting up wktr..."
+setup_wktr
 echo "...done"
 echo
 
