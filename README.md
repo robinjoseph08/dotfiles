@@ -35,7 +35,7 @@ See [`ai/README.md`](ai/README.md) for what is shared and what intentionally rem
 ## Platforms supported
 
 - [x] macOS
-- [x] Linux, without platform-specific dependency or application setup
+- [x] Linux, without automatic dependency or application setup
 
 On Linux, the setup script links portable configuration and skips macOS-only steps. Optional setup is also skipped when its required tools are unavailable. Install any desired command-line dependencies with your system package manager.
 

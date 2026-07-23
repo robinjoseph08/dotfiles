@@ -139,7 +139,7 @@ function setup_wktr_configuration () {
 
 function setup_platform_dependencies () {
   if ! is_macos; then
-    echo "Skipping platform-specific dependency installation."
+    echo "Skipping automatic dependency installation on this platform."
     return
   fi
 
@@ -171,9 +171,12 @@ function setup_vim () {
   echo
   echo "Setting up vim..."
   if [ ! -d ~/.vim/bundle ]; then
+    mkdir -p ~/.config/nvim
+    ln -sf "$DOTFILES_DIR/.vimrc" ~/.config/nvim/init.vim
+
     for dependency in curl git make vim; do
       if ! command -v "$dependency" > /dev/null 2>&1; then
-        echo "Skipping Vim setup because $dependency is unavailable."
+        echo "Skipping Vim plugin setup because $dependency is unavailable."
         echo "...done"
         echo
         return
@@ -183,8 +186,6 @@ function setup_vim () {
     mkdir -p ~/.vim/bundle
     mkdir -p ~/.vim/undo
     cd "$DOTFILES_DIR"
-    mkdir -p ~/.config/nvim
-    ln -sf "$DOTFILES_DIR/.vimrc" ~/.config/nvim/init.vim
     vim +PlugInstall +qall
   fi
   echo "...done"

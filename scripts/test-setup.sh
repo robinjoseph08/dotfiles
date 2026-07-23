@@ -16,6 +16,25 @@ fail() {
   exit 1
 }
 
+link_test_command() {
+  local bin=$1
+  local command_name=$2
+  local command_path
+
+  command_path=$(type -P "$command_name")
+  ln -s "$command_path" "$bin/$command_name"
+}
+
+make_success_stub() {
+  local path=$1
+
+  cat > "$path" <<'EOF'
+#!/bin/bash
+exit 0
+EOF
+  chmod +x "$path"
+}
+
 make_brew_stub() {
   local path=$1
 
@@ -310,23 +329,152 @@ test_macos_setup_runs_platform_steps() (
     fail "Unexpected macOS setup calls:$calls"
 )
 
-test_missing_optional_tools_are_skipped() (
-  local home="$TEMP_ROOT/missing-tools-home"
-  local output
+test_macos_installs_missing_oh_my_zsh() (
+  local calls=''
+  local home="$TEMP_ROOT/macos-oh-my-zsh-home"
 
   export HOME="$home"
+  OSTYPE=darwin24
   mkdir -p "$HOME"
-  PATH="$TEMP_ROOT/missing-tools-bin"
 
-  output=$(setup_ai_tools)
+  setup_homebrew_dependencies() { calls+=' homebrew'; }
+  setup_fzf_extensions() { calls+=' fzf'; }
+  curl() { printf '%s\n' 'mkdir -p "$HOME/.oh-my-zsh"'; }
+  chsh() {
+    [[ $* == '-s /bin/zsh' ]] || fail "Unexpected chsh arguments: $*"
+    calls+=' chsh'
+  }
+
+  setup_platform_dependencies >/dev/null
+
+  [[ -d $HOME/.oh-my-zsh ]]
+  [[ $calls == ' homebrew chsh fzf' ]] ||
+    fail "Unexpected missing-Oh-My-Zsh setup calls:$calls"
+)
+
+test_missing_optional_tools_are_skipped() (
+  local bin="$TEMP_ROOT/missing-tools-bin"
+  local dependency
+  local home
+  local output
+  local present_dependency
+
+  mkdir -p "$bin"
+  link_test_command "$bin" mkdir
+  link_test_command "$bin" ln
+
+  home="$TEMP_ROOT/missing-ai-home"
+  mkdir -p "$home"
+  output=$(HOME="$home" PATH="$bin" setup_ai_tools)
   [[ $output == *'Skipping AI tool setup because jq is unavailable.'* ]]
 
-  output=$(setup_vim)
-  [[ $output == *'Skipping Vim setup because curl is unavailable.'* ]]
+  for dependency in curl git make vim; do
+    bin="$TEMP_ROOT/missing-$dependency-bin"
+    home="$TEMP_ROOT/missing-$dependency-home"
+    mkdir -p "$bin" "$home"
+    link_test_command "$bin" mkdir
+    link_test_command "$bin" ln
 
-  output=$(setup_zsh_theme)
+    for present_dependency in curl git make vim; do
+      if [[ $present_dependency != "$dependency" ]]; then
+        make_success_stub "$bin/$present_dependency"
+      fi
+    done
+
+    output=$(HOME="$home" PATH="$bin" setup_vim)
+    [[ $output == *"Skipping Vim plugin setup because $dependency is unavailable."* ]]
+    [[ -L $home/.config/nvim/init.vim ]]
+    [[ ! -e $home/.vim/bundle ]]
+  done
+
+  home="$TEMP_ROOT/missing-zsh-home"
+  mkdir -p "$home"
+  output=$(HOME="$home" setup_zsh_theme)
   [[ $output == *'Skipping the custom Zsh theme because Oh My Zsh is unavailable.'* ]]
+  [[ ! -e $home/.oh-my-zsh ]]
 )
+
+test_available_optional_tools_are_configured() (
+  local ai_dotfiles="$TEMP_ROOT/available-ai-dotfiles"
+  local bin="$TEMP_ROOT/available-tools-bin"
+  local home="$TEMP_ROOT/available-tools-home"
+
+  mkdir -p "$ai_dotfiles/scripts" "$bin" "$home/.oh-my-zsh/custom/themes"
+  link_test_command "$bin" mkdir
+  link_test_command "$bin" ln
+  make_success_stub "$bin/curl"
+  make_success_stub "$bin/git"
+  make_success_stub "$bin/make"
+  make_success_stub "$bin/jq"
+  cat > "$bin/vim" <<'EOF'
+#!/bin/bash
+: > "$VIM_LOG"
+EOF
+  chmod +x "$bin/vim"
+  cat > "$ai_dotfiles/scripts/setup-ai.sh" <<'EOF'
+#!/bin/bash
+: > "$AI_SETUP_LOG"
+EOF
+  chmod +x "$ai_dotfiles/scripts/setup-ai.sh"
+
+  HOME="$home" PATH="$bin" DOTFILES_DIR="$ai_dotfiles" AI_SETUP_LOG="$home/ai-setup" setup_ai_tools
+  [[ -f $home/ai-setup ]]
+
+  HOME="$home" PATH="$bin" DOTFILES_DIR="$DOTFILES_REPO" VIM_LOG="$home/vim-setup" setup_vim >/dev/null
+  [[ -f $home/vim-setup ]]
+  [[ -d $home/.vim/bundle ]]
+  [[ -L $home/.config/nvim/init.vim ]]
+
+  HOME="$home" DOTFILES_DIR="$DOTFILES_REPO" OLD_DIR="$home/old" setup_zsh_theme >/dev/null
+  [[ $(readlink "$home/.oh-my-zsh/custom/themes/robin.zsh-theme") == "$DOTFILES_REPO/robin.zsh-theme" ]]
+)
+
+test_linux_entrypoint_omits_incompatible_steps() (
+  local bin="$TEMP_ROOT/linux-entrypoint-bin"
+  local dotfiles
+  local home="$TEMP_ROOT/linux-entrypoint-home"
+  local marker="$TEMP_ROOT/linux-entrypoint-macos-command"
+  local platform_command
+
+  dotfiles="$home/.dotfiles"
+  mkdir -p "$bin" "$home"
+  cp -R "$DOTFILES_REPO" "$dotfiles"
+  link_test_command "$bin" cp
+  link_test_command "$bin" ln
+  link_test_command "$bin" mkdir
+
+  for platform_command in brew chsh curl defaults find git; do
+    cat > "$bin/$platform_command" <<EOF
+#!/bin/bash
+printf '%s\n' '$platform_command' >> '$marker'
+exit 97
+EOF
+    chmod +x "$bin/$platform_command"
+  done
+
+  if ! HOME="$home" OSTYPE=linux-gnu PATH="$bin" /bin/bash "$dotfiles/setup.sh" \
+    >"$home/setup.out" 2>"$home/setup.err"; then
+    fail "Expected the Linux setup entrypoint to succeed: $(cat "$home/setup.err")"
+  fi
+
+  [[ ! -s $home/setup.err ]]
+  [[ ! -e $marker ]]
+  [[ -L $home/.zshrc ]]
+  [[ -L $home/.config/herdr/config.toml ]]
+  [[ -L $home/.config/nvim/init.vim ]]
+  [[ ! -e $home/.config/wktr/config.yaml ]]
+  [[ ! -e "$home/Library/Application Support/iTerm2" ]]
+  [[ ! -e "$home/Library/Application Support/Code" ]]
+)
+
+test_shell_and_tmux_guards() {
+  grep -Fq 'if command -v brew > /dev/null 2>&1; then' "$DOTFILES_REPO/.bash_profile"
+  grep -Fq '[[ -f "$ZSH/oh-my-zsh.sh" ]]' "$DOTFILES_REPO/.zshrc"
+  grep -Fq 'command -v mise > /dev/null 2>&1' "$DOTFILES_REPO/.zshrc"
+  grep -Fq 'if command -v brew > /dev/null 2>&1; then' "$DOTFILES_REPO/.zshrc"
+  grep -Fq "if-shell 'command -v reattach-to-user-namespace >/dev/null 2>&1'" "$DOTFILES_REPO/.tmux.conf"
+  grep -Fq "'bind-key -T copy-mode-vi y send-keys -X copy-selection-and-cancel'" "$DOTFILES_REPO/.tmux.conf"
+}
 
 test_git_credential_helper_uses_git_exec_path() (
   local exec_path="$TEMP_ROOT/git-exec-path"
@@ -360,7 +508,11 @@ test_wktr_config_semantics
 test_platform_detection
 test_non_macos_setup_omits_platform_steps
 test_macos_setup_runs_platform_steps
+test_macos_installs_missing_oh_my_zsh
 test_missing_optional_tools_are_skipped
+test_available_optional_tools_are_configured
+test_linux_entrypoint_omits_incompatible_steps
+test_shell_and_tmux_guards
 test_git_credential_helper_uses_git_exec_path
 
 echo "Setup tests passed."
