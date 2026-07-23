@@ -46,17 +46,24 @@ function check_file () {
   [ -f "$1" ] && [ ! -h "$1" ]
 }
 
+# Adds an existing Homebrew installation to this process.
+function setup_brew_environment () {
+  if [ -x /opt/homebrew/bin/brew ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  elif [ -x /usr/local/bin/brew ]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+  else
+    return 1
+  fi
+}
+
 echo
 echo "Setting up dependencies..."
 if [[ $OSTYPE == darwin* ]]; then
-  if ! type brew > /dev/null 2>&1; then
+  if ! type brew > /dev/null 2>&1 && ! setup_brew_environment; then
     echo "Installing brew..."
     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    if [ -x /opt/homebrew/bin/brew ]; then
-      eval "$(/opt/homebrew/bin/brew shellenv)"
-    elif [ -x /usr/local/bin/brew ]; then
-      eval "$(/usr/local/bin/brew shellenv)"
-    else
+    if ! setup_brew_environment; then
       echo "Could not find Homebrew after installation." >&2
       exit 1
     fi
