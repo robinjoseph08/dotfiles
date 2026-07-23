@@ -21,7 +21,7 @@ The standalone AI setup requires `jq`.
 
 ## What does it do?
 
-* Installs command-line dependencies with Homebrew
+* Installs command-line dependencies with Homebrew on macOS
 * Backs up existing configuration under `old/`
 * Symlinks shell, terminal, editor, and application configuration
 * Sets up Vim, Neovim, Zsh, iTerm2, VS Code, Herdr, and wktr
@@ -34,10 +34,12 @@ See [`ai/README.md`](ai/README.md) for what is shared and what intentionally rem
 
 ## Platforms supported
 
-- [x] Mac OS X
-- [ ] Ubuntu
+- [x] macOS
+- [x] Linux, without automatic dependency or application setup
+
+On Linux, the setup script links portable configuration and skips macOS-only steps. Optional setup is also skipped when its required tools are unavailable. Install any desired command-line dependencies with your system package manager.
 
 ## Prerequisites
 
-* Mac OS X
+* macOS
   * Xcode (and the Command Line Tools)

@@ -43,6 +43,10 @@ test_invalid_pi_settings_fail_before_mutation() {
   assert_untouched "$home" "original instructions"
 }
 
+test_app_icon_skill_disables_automatic_invocation() {
+  grep -Fxq 'disable-model-invocation: true' "$DOTFILES_DIR/ai/skills/app-icon-design/SKILL.md"
+}
+
 test_migration_and_idempotence() {
   local home="$TEMP_ROOT/migration-home"
   local external="$TEMP_ROOT/external"
@@ -78,6 +82,7 @@ test_migration_and_idempotence() {
 
 test_missing_sources_fail_before_mutation
 test_invalid_pi_settings_fail_before_mutation
+test_app_icon_skill_disables_automatic_invocation
 test_migration_and_idempotence
 
 echo "AI setup tests passed."

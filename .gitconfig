@@ -2,7 +2,7 @@
   name = Robin Joseph
   email = robinmjoseph08@gmail.com
 [credential]
-  helper = osxkeychain
+  helper = "!f() { helper=\"$(git --exec-path)/git-credential-osxkeychain\"; if [ -x \"$helper\" ]; then \"$helper\" \"$@\"; fi; }; f"
 [push]
   default = simple
 [alias]

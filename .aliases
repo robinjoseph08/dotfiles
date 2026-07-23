@@ -1,4 +1,6 @@
-alias ls="ls -G"
+if [[ $OSTYPE == darwin* ]]; then
+  alias ls="ls -G"
+fi
 alias gl="git log"
 alias gs="git status"
 alias ga="git add"

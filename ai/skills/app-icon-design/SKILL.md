@@ -12,6 +12,7 @@ description: >-
   or .ico generation, a monochrome or themed icon variant, or a
   splash-screen logo, even if they just say "make an icon for my app" or
   "we need a logo".
+disable-model-invocation: true
 ---
 
 # App Icon Design
