@@ -1,0 +1,7 @@
+worktree_directory: /Users/robinjoseph/.worktrees
+branch_prefix: wktr/
+layout:
+  direction: vertical
+  panes:
+    - command: pi
+    - {}

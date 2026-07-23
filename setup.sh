@@ -24,13 +24,14 @@ BREW=''
 BREW+=' awscli'
 BREW+=' fd'
 BREW+=' fzf'
+BREW+=' gh'
 BREW+=' herdr'
 BREW+=' jq'
-BREW+=' kubectl'
 BREW+=' mise'
 BREW+=' neovim'
 BREW+=' reattach-to-user-namespace'
 BREW+=' ripgrep'
+BREW+=' robinjoseph08/tap/wktr'
 BREW+=' tmux'
 BREW+=' tree'
 BREW+=' vim'
@@ -50,11 +51,40 @@ echo "Setting up dependencies..."
 if [[ $OSTYPE == darwin* ]]; then
   if ! type brew > /dev/null 2>&1; then
     echo "Installing brew..."
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    eval "$(/opt/homebrew/bin/brew shellenv)"
+    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    if [ -x /opt/homebrew/bin/brew ]; then
+      eval "$(/opt/homebrew/bin/brew shellenv)"
+    elif [ -x /usr/local/bin/brew ]; then
+      eval "$(/usr/local/bin/brew shellenv)"
+    else
+      echo "Could not find Homebrew after installation." >&2
+      exit 1
+    fi
   fi
+
+  BREW_INSTALL_ARGS=''
+  if brew install --help 2>&1 | grep -q -- '--no-ask'; then
+    BREW_INSTALL_ARGS='--no-ask'
+  else
+    export HOMEBREW_NO_ASK=1
+  fi
+
+  if brew help trust > /dev/null 2>&1; then
+    echo "Trusting the robinjoseph08/tap tap..."
+    if ! brew trust --tap robinjoseph08/tap; then
+      echo "Could not trust robinjoseph08/tap." >&2
+      exit 1
+    fi
+  else
+    # Compatibility for Homebrew versions without the explicit trust command.
+    export HOMEBREW_NO_REQUIRE_TAP_TRUST=1
+  fi
+
   echo "Installing$BREW..."
-  brew install $BREW 2> /dev/null
+  if ! brew install $BREW_INSTALL_ARGS $BREW; then
+    echo "Could not install Homebrew dependencies." >&2
+    exit 1
+  fi
   if [ ! -d ~/.oh-my-zsh ]; then
     echo "Installing Oh My Zsh..."
     curl -L https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh | sh
@@ -134,6 +164,30 @@ if check_file ~/.config/herdr/config.toml; then
 fi
 if ! ln -sf $DOTFILES_DIR/herdr.toml ~/.config/herdr/config.toml; then
   echo "Could not link the herdr config." >&2
+  exit 1
+fi
+echo "...done"
+echo
+
+echo
+echo "Setting up wktr..."
+if ! mkdir -p ~/.config/wktr; then
+  echo "Could not create ~/.config/wktr; leaving the existing config untouched." >&2
+  exit 1
+fi
+if [ -d ~/.config/wktr/config.yaml ]; then
+  echo "~/.config/wktr/config.yaml is a directory; leaving it untouched." >&2
+  exit 1
+fi
+if check_file ~/.config/wktr/config.yaml; then
+  echo "Copying old wktr config.yaml into $OLD_DIR/wktr.yaml..."
+  if ! cp ~/.config/wktr/config.yaml $OLD_DIR/wktr.yaml; then
+    echo "Could not back up the existing wktr config; leaving it untouched." >&2
+    exit 1
+  fi
+fi
+if ! ln -sf $DOTFILES_DIR/wktr.yaml ~/.config/wktr/config.yaml; then
+  echo "Could not link the wktr config." >&2
   exit 1
 fi
 echo "...done"
