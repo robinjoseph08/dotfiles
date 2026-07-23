@@ -4,9 +4,6 @@
 DOTFILES_DIR=~/.dotfiles
 OLD_DIR=$DOTFILES_DIR/old
 
-# Ensure we're in the dotfiles directory
-cd $DOTFILES_DIR
-
 # List of dotfiles for home directory
 FILES=''
 FILES+=' .aliases'
@@ -48,18 +45,20 @@ function check_file () {
 
 # Adds an existing Homebrew installation to this process.
 function setup_brew_environment () {
-  if [ -x /opt/homebrew/bin/brew ]; then
-    eval "$(/opt/homebrew/bin/brew shellenv)"
-  elif [ -x /usr/local/bin/brew ]; then
-    eval "$(/usr/local/bin/brew shellenv)"
-  else
-    return 1
-  fi
+  local brew_path
+  local shellenv
+
+  for brew_path in ${HOMEBREW_PATHS:-/opt/homebrew/bin/brew /usr/local/bin/brew}; do
+    [ -x "$brew_path" ] || continue
+    if shellenv="$($brew_path shellenv)" && eval "$shellenv"; then
+      return 0
+    fi
+  done
+
+  return 1
 }
 
-echo
-echo "Setting up dependencies..."
-if [[ $OSTYPE == darwin* ]]; then
+function setup_homebrew_dependencies () {
   if ! type brew > /dev/null 2>&1 && ! setup_brew_environment; then
     echo "Installing brew..."
     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -92,13 +91,57 @@ if [[ $OSTYPE == darwin* ]]; then
     echo "Could not install Homebrew dependencies." >&2
     exit 1
   fi
+}
+
+function setup_fzf_extensions () {
+  local fzf_prefix
+
+  if ! fzf_prefix="$(brew --prefix fzf)" || ! "$fzf_prefix/install"; then
+    echo "Could not install fzf shell extensions." >&2
+    exit 1
+  fi
+}
+
+function setup_wktr () {
+  if ! mkdir -p ~/.config/wktr; then
+    echo "Could not create ~/.config/wktr; leaving the existing config untouched." >&2
+    exit 1
+  fi
+  if [ -d ~/.config/wktr/config.yaml ]; then
+    echo "~/.config/wktr/config.yaml is a directory; leaving it untouched." >&2
+    exit 1
+  fi
+  if check_file ~/.config/wktr/config.yaml; then
+    echo "Copying old wktr config.yaml into $OLD_DIR/wktr.yaml..."
+    if ! cp ~/.config/wktr/config.yaml $OLD_DIR/wktr.yaml; then
+      echo "Could not back up the existing wktr config; leaving it untouched." >&2
+      exit 1
+    fi
+  fi
+  if ! ln -sf $DOTFILES_DIR/wktr.yaml ~/.config/wktr/config.yaml; then
+    echo "Could not link the wktr config." >&2
+    exit 1
+  fi
+}
+
+if [[ ${BASH_SOURCE[0]} != "$0" ]]; then
+  return 0
+fi
+
+# Ensure we're in the dotfiles directory
+cd $DOTFILES_DIR
+
+echo
+echo "Setting up dependencies..."
+if [[ $OSTYPE == darwin* ]]; then
+  setup_homebrew_dependencies
   if [ ! -d ~/.oh-my-zsh ]; then
     echo "Installing Oh My Zsh..."
     curl -L https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh | sh
     chsh -s /bin/zsh
   fi
   echo "Installing fzf extensions..."
-  /usr/local/opt/fzf/install
+  setup_fzf_extensions
 fi
 echo "...done"
 echo
@@ -178,25 +221,7 @@ echo
 
 echo
 echo "Setting up wktr..."
-if ! mkdir -p ~/.config/wktr; then
-  echo "Could not create ~/.config/wktr; leaving the existing config untouched." >&2
-  exit 1
-fi
-if [ -d ~/.config/wktr/config.yaml ]; then
-  echo "~/.config/wktr/config.yaml is a directory; leaving it untouched." >&2
-  exit 1
-fi
-if check_file ~/.config/wktr/config.yaml; then
-  echo "Copying old wktr config.yaml into $OLD_DIR/wktr.yaml..."
-  if ! cp ~/.config/wktr/config.yaml $OLD_DIR/wktr.yaml; then
-    echo "Could not back up the existing wktr config; leaving it untouched." >&2
-    exit 1
-  fi
-fi
-if ! ln -sf $DOTFILES_DIR/wktr.yaml ~/.config/wktr/config.yaml; then
-  echo "Could not link the wktr config." >&2
-  exit 1
-fi
+setup_wktr
 echo "...done"
 echo
 
