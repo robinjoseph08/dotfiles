@@ -53,7 +53,7 @@ plugins=(git npm)
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 # export MANPATH="/usr/local/man:$MANPATH"
 
-source $ZSH/oh-my-zsh.sh
+[[ -f "$ZSH/oh-my-zsh.sh" ]] && source "$ZSH/oh-my-zsh.sh"
 
 # You may need to manually set your language environment
 # export LANG=en_US.UTF-8
@@ -89,7 +89,7 @@ fi
 export HOMEBREW_NO_ASK=1
 
 # mise
-eval "$(mise activate zsh)"
+command -v mise > /dev/null 2>&1 && eval "$(mise activate zsh)"
 
 # aliases
 source ~/.aliases
@@ -126,7 +126,9 @@ GREP_OPTIONS+=" --exclude=./public/bundle.js.map"
 export GREP_OPTIONS
 
 # autocompletion
-FPATH="$(brew --prefix)/share/zsh/site-functions:${FPATH}"
+if command -v brew > /dev/null 2>&1; then
+  FPATH="$(brew --prefix)/share/zsh/site-functions:${FPATH}"
+fi
 autoload -U compinit && compinit
 autoload -U bashcompinit && bashcompinit
 

@@ -260,6 +260,94 @@ test_wktr_config_semantics() {
   grep -Fxq '    - command: pi' "$DOTFILES_REPO/wktr.yaml"
 }
 
+test_platform_detection() (
+  OSTYPE=darwin24
+  is_macos || fail 'Expected Darwin to be detected as macOS.'
+
+  OSTYPE=linux-gnu
+  if is_macos; then
+    fail 'Expected Linux not to be detected as macOS.'
+  fi
+)
+
+test_non_macos_setup_omits_platform_steps() (
+  OSTYPE=linux-gnu
+
+  setup_homebrew_dependencies() { fail 'Homebrew setup should be omitted on Linux.'; }
+  setup_fzf_extensions() { fail 'fzf Homebrew setup should be omitted on Linux.'; }
+  setup_iterm2() { fail 'iTerm2 setup should be omitted on Linux.'; }
+  setup_vscode() { fail 'macOS VS Code setup should be omitted on Linux.'; }
+  setup_powerline_fonts() { fail 'Powerline font setup should be omitted on Linux.'; }
+  setup_macos_preferences() { fail 'macOS preferences should be omitted on Linux.'; }
+  setup_wktr() { fail 'macOS-specific wktr config should be omitted on Linux.'; }
+
+  setup_platform_dependencies >/dev/null
+  setup_platform_configuration >/dev/null
+  setup_wktr_configuration >/dev/null
+)
+
+test_macos_setup_runs_platform_steps() (
+  local calls=''
+  local home="$TEMP_ROOT/macos-platform-home"
+
+  export HOME="$home"
+  OSTYPE=darwin24
+  mkdir -p "$HOME/.oh-my-zsh"
+
+  setup_homebrew_dependencies() { calls+=' homebrew'; }
+  setup_fzf_extensions() { calls+=' fzf'; }
+  setup_iterm2() { calls+=' iterm'; }
+  setup_vscode() { calls+=' vscode'; }
+  setup_powerline_fonts() { calls+=' fonts'; }
+  setup_macos_preferences() { calls+=' preferences'; }
+  setup_wktr() { calls+=' wktr'; }
+
+  setup_platform_dependencies >/dev/null
+  setup_platform_configuration >/dev/null
+  setup_wktr_configuration >/dev/null
+
+  [[ $calls == ' homebrew fzf iterm vscode fonts preferences wktr' ]] ||
+    fail "Unexpected macOS setup calls:$calls"
+)
+
+test_missing_optional_tools_are_skipped() (
+  local home="$TEMP_ROOT/missing-tools-home"
+  local output
+
+  export HOME="$home"
+  mkdir -p "$HOME"
+  PATH="$TEMP_ROOT/missing-tools-bin"
+
+  output=$(setup_ai_tools)
+  [[ $output == *'Skipping AI tool setup because jq is unavailable.'* ]]
+
+  output=$(setup_vim)
+  [[ $output == *'Skipping Vim setup because curl is unavailable.'* ]]
+
+  output=$(setup_zsh_theme)
+  [[ $output == *'Skipping the custom Zsh theme because Oh My Zsh is unavailable.'* ]]
+)
+
+test_git_credential_helper_uses_git_exec_path() (
+  local exec_path="$TEMP_ROOT/git-exec-path"
+  local helper
+  local log="$TEMP_ROOT/git-credential.log"
+
+  mkdir -p "$exec_path"
+  cat > "$exec_path/git-credential-osxkeychain" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$*" > "$CREDENTIAL_LOG"
+cat >/dev/null
+EOF
+  chmod +x "$exec_path/git-credential-osxkeychain"
+
+  helper=$(git config -f "$DOTFILES_REPO/.gitconfig" --get credential.helper)
+  GIT_EXEC_PATH="$exec_path" CREDENTIAL_LOG="$log" /bin/sh -c "${helper#!} get" </dev/null
+  [[ $(cat "$log") == get ]]
+
+  GIT_EXEC_PATH="$TEMP_ROOT/missing-git-exec-path" /bin/sh -c "${helper#!} get" </dev/null
+)
+
 test_modern_homebrew_dependencies
 test_legacy_homebrew_dependencies
 test_homebrew_failures_stop_installation
@@ -269,5 +357,10 @@ test_fzf_extensions_use_brew_prefix
 test_wktr_migration_and_idempotence
 test_wktr_directory_is_untouched
 test_wktr_config_semantics
+test_platform_detection
+test_non_macos_setup_omits_platform_steps
+test_macos_setup_runs_platform_steps
+test_missing_optional_tools_are_skipped
+test_git_credential_helper_uses_git_exec_path
 
 echo "Setup tests passed."

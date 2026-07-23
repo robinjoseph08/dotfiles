@@ -43,6 +43,10 @@ function check_file () {
   [ -f "$1" ] && [ ! -h "$1" ]
 }
 
+function is_macos () {
+  [[ $OSTYPE == darwin* ]]
+}
+
 # Adds an existing Homebrew installation to this process.
 function setup_brew_environment () {
   local brew_path
@@ -124,6 +128,151 @@ function setup_wktr () {
   fi
 }
 
+function setup_wktr_configuration () {
+  if ! is_macos; then
+    echo "Skipping wktr configuration because it contains a macOS home path."
+    return
+  fi
+
+  setup_wktr
+}
+
+function setup_platform_dependencies () {
+  if ! is_macos; then
+    echo "Skipping platform-specific dependency installation."
+    return
+  fi
+
+  setup_homebrew_dependencies
+  if [ ! -d ~/.oh-my-zsh ]; then
+    echo "Installing Oh My Zsh..."
+    curl -L https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh | sh
+    chsh -s /bin/zsh
+  fi
+  echo "Installing fzf extensions..."
+  setup_fzf_extensions
+}
+
+function setup_ai_tools () {
+  if ! command -v jq > /dev/null 2>&1; then
+    echo "Skipping AI tool setup because jq is unavailable."
+    return
+  fi
+
+  if ! "$DOTFILES_DIR/scripts/setup-ai.sh"; then
+    echo "Could not set up AI tools." >&2
+    exit 1
+  fi
+}
+
+function setup_vim () {
+  local dependency
+
+  echo
+  echo "Setting up vim..."
+  if [ ! -d ~/.vim/bundle ]; then
+    for dependency in curl git make vim; do
+      if ! command -v "$dependency" > /dev/null 2>&1; then
+        echo "Skipping Vim setup because $dependency is unavailable."
+        echo "...done"
+        echo
+        return
+      fi
+    done
+
+    mkdir -p ~/.vim/bundle
+    mkdir -p ~/.vim/undo
+    cd "$DOTFILES_DIR"
+    mkdir -p ~/.config/nvim
+    ln -sf "$DOTFILES_DIR/.vimrc" ~/.config/nvim/init.vim
+    vim +PlugInstall +qall
+  fi
+  echo "...done"
+  echo
+}
+
+function setup_zsh_theme () {
+  echo
+  echo "Setting up zsh..."
+  if [ ! -d ~/.oh-my-zsh ]; then
+    echo "Skipping the custom Zsh theme because Oh My Zsh is unavailable."
+    echo "...done"
+    echo
+    return
+  fi
+
+  mkdir -p ~/.oh-my-zsh/custom/themes
+  if check_file ~/.oh-my-zsh/custom/themes/robin.zsh-theme; then
+    echo "Copying old robin.zsh-theme into $OLD_DIR..."
+    cp ~/.oh-my-zsh/custom/themes/robin.zsh-theme "$OLD_DIR"
+  fi
+  ln -sf "$DOTFILES_DIR/robin.zsh-theme" ~/.oh-my-zsh/custom/themes
+  echo "...done"
+  echo
+}
+
+function setup_iterm2 () {
+  echo
+  echo "Setting up iTerm2..."
+  mkdir -p "$HOME/Library/Application Support/iTerm2/DynamicProfiles"
+  if check_file "$HOME/Library/Application Support/iTerm2/DynamicProfiles/iterm.json"; then
+    echo "Copying old iterm.json into $OLD_DIR..."
+    cp "$HOME/Library/Application Support/iTerm2/DynamicProfiles/iterm.json" "$OLD_DIR"
+  fi
+  # This must be a hard link because iTerm can't read symlinks
+  ln -f "$DOTFILES_DIR/iterm.json" "$HOME/Library/Application Support/iTerm2/DynamicProfiles"
+  echo "=== Make sure you set this profile as the default one in iTerm2 ==="
+  echo "...done"
+  echo
+}
+
+function setup_vscode () {
+  echo
+  echo "Setting up VS Code..."
+  mkdir -p "$HOME/Library/Application Support/Code/User"
+  if check_file "$HOME/Library/Application Support/Code/User/settings.json"; then
+    echo "Copying old settings.json into $OLD_DIR..."
+    cp "$HOME/Library/Application Support/Code/User/settings.json" "$OLD_DIR/vscode.json"
+  fi
+  ln -sf "$DOTFILES_DIR/vscode.json" "$HOME/Library/Application Support/Code/User/settings.json"
+  echo "...done"
+  echo
+}
+
+function setup_powerline_fonts () {
+  if [ -z "$(find ~/Library/Fonts -name '*Powerline*')" ]; then
+    echo
+    echo "Installing Powerline Fonts..."
+    git clone https://github.com/powerline/fonts.git --depth=1
+    cd fonts
+    ./install.sh
+    cd ..
+    rm -rf fonts
+    echo "...done"
+    echo
+  fi
+}
+
+function setup_macos_preferences () {
+  echo
+  echo "Enabling key repeats on Mac..."
+  defaults write NSGlobalDomain ApplePressAndHoldEnabled -bool false
+  echo "...done"
+  echo
+}
+
+function setup_platform_configuration () {
+  if ! is_macos; then
+    echo "Skipping macOS application configuration."
+    return
+  fi
+
+  setup_iterm2
+  setup_vscode
+  setup_powerline_fonts
+  setup_macos_preferences
+}
+
 if [[ ${BASH_SOURCE[0]} != "$0" ]]; then
   return 0
 fi
@@ -133,16 +282,7 @@ cd $DOTFILES_DIR
 
 echo
 echo "Setting up dependencies..."
-if [[ $OSTYPE == darwin* ]]; then
-  setup_homebrew_dependencies
-  if [ ! -d ~/.oh-my-zsh ]; then
-    echo "Installing Oh My Zsh..."
-    curl -L https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh | sh
-    chsh -s /bin/zsh
-  fi
-  echo "Installing fzf extensions..."
-  setup_fzf_extensions
-fi
+setup_platform_dependencies
 echo "...done"
 echo
 
@@ -166,34 +306,9 @@ done
 echo "...done"
 echo
 
-if ! "$DOTFILES_DIR/scripts/setup-ai.sh"; then
-  echo "Could not set up AI tools." >&2
-  exit 1
-fi
-
-echo
-echo "Setting up vim..."
-if [ ! -d ~/.vim/bundle ]; then
-  mkdir -p ~/.vim/bundle
-  mkdir -p ~/.vim/undo
-  cd $DOTFILES_DIR
-  mkdir -p ~/.config/nvim
-  ln -s $DOTFILES_DIR/.vimrc ~/.config/nvim/init.vim
-  vim +PlugInstall +qall
-fi
-echo "...done"
-echo
-
-echo
-echo "Setting up zsh..."
-mkdir -p ~/.oh-my-zsh/custom/themes
-if check_file ~/.oh-my-zsh/custom/themes/robin.zsh-theme; then
-  echo "Copying old robin.zsh-theme into $OLD_DIR..."
-  cp ~/.oh-my-zsh/custom/themes/robin.zsh-theme $OLD_DIR
-fi
-ln -sf $DOTFILES_DIR/robin.zsh-theme ~/.oh-my-zsh/custom/themes
-echo "...done"
-echo
+setup_ai_tools
+setup_vim
+setup_zsh_theme
 
 echo
 echo "Setting up herdr..."
@@ -221,48 +336,8 @@ echo
 
 echo
 echo "Setting up wktr..."
-setup_wktr
+setup_wktr_configuration
 echo "...done"
 echo
 
-echo
-echo "Setting up iTerm2..."
-mkdir -p "$HOME/Library/Application Support/iTerm2/DynamicProfiles"
-if check_file "$HOME/Library/Application Support/iTerm2/DynamicProfiles/iterm.json"; then
-  echo "Copying old iterm.json into $OLD_DIR..."
-  cp "$HOME/Library/Application Support/iTerm2/DynamicProfiles/iterm.json" "$OLD_DIR"
-fi
-# This must be a hard link because iTerm can't read symlinks
-ln -f "$DOTFILES_DIR/iterm.json" "$HOME/Library/Application Support/iTerm2/DynamicProfiles"
-echo "=== Make sure you set this profile as the default one in iTerm2 ==="
-echo "...done"
-echo
-
-echo
-echo "Setting up VS Code..."
-mkdir -p "$HOME/Library/Application Support/Code/User"
-if check_file "$HOME/Library/Application Support/Code/User/settings.json"; then
-  echo "Copying old settings.json into $OLD_DIR..."
-  cp "$HOME/Library/Application Support/Code/User/settings.json" "$OLD_DIR/vscode.json"
-fi
-ln -sf "$DOTFILES_DIR/vscode.json" "$HOME/Library/Application Support/Code/User/settings.json"
-echo "...done"
-echo
-
-if [ -z "$(find ~/Library/Fonts -name '*Powerline*')" ]; then
-  echo
-  echo "Installing Powerline Fonts..."
-  git clone https://github.com/powerline/fonts.git --depth=1
-  cd fonts
-  ./install.sh
-  cd ..
-  rm -rf fonts
-  echo "...done"
-  echo
-fi
-
-echo
-echo "Enabling key repeats on Mac..."
-defaults write NSGlobalDomain ApplePressAndHoldEnabled -bool false
-echo "...done"
-echo
+setup_platform_configuration
