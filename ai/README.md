@@ -17,8 +17,9 @@ Existing files and managed skill directories are moved under `old/ai/` before th
 
 Credentials and generated state must not be committed. This includes:
 
-- Pi `auth.json`, sessions, trust decisions, and package caches
+- Pi `auth.json`, sessions, trust decisions, package caches, and generated changelog version state
 - Claude history, projects, sessions, caches, backups, and plugin caches
+- Shared skill manager `.skill-lock.json` state
 - Codex authentication, history, sessions, caches, logs, project trust, and command approval rules
 
 Pi installs the packages declared in `pi/settings.json` on startup. Claude Code installs enabled plugins through its own plugin manager. API logins still need to be completed separately on each machine.
