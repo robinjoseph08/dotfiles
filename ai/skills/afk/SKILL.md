@@ -142,7 +142,7 @@ Dependency override:
 
    Do not skip this. If it fails, fix and re-run until it passes; that is part of your job, not the coordinator's.
 
-   You are a subagent: never end your turn to wait for a background task, because ending your turn kills the task and its completion notification never arrives. Run long commands (builds, E2E suites) in the foreground with a generous timeout, or block on a backgrounded task with TaskOutput (block=true) in the same turn.
+   You are a subagent: never end your turn to wait for a background task, because ending your turn kills the task and its completion notification never arrives. Run long commands (builds, E2E suites) in the foreground with a generous timeout. If background work is unavoidable, use the harness's blocking result mechanism, such as Pi's `get_subagent_result` with `wait: true` or Claude Code's `TaskOutput` with `block=true`, in the same turn.
 
 5. Before returning, run this self-review pass over your own work:
    - **Error branches**: every error return and failure path you added has a test, or you can state why not.
@@ -226,7 +226,7 @@ NOTES FOR PR BODY:
 
 4. **Validation commands for this repo** (matching CI): <full validation commands, including any quirks needed to match CI>. Run these after every fix round, per the ship-it skill.
 
-5. **You are a subagent; never end your turn to wait for background work.** Ending your turn kills every background task you started (reviewer agents, E2E runs) and their completion notifications never arrive, stalling the whole run. Spawn reviewers synchronously (run_in_background: false; multiple synchronous Agent calls in one message still run concurrently) and run long commands in the foreground with a generous timeout. If you must background something, block on it with TaskOutput (block=true) in the same turn until it finishes. Only end your turn when you are returning the final report below.
+5. **You are a subagent; never end your turn to wait for background work.** Ending your turn kills every background task you started (reviewer agents, E2E runs) and their completion notifications never arrive, stalling the whole run. Spawn reviewers synchronously (run_in_background: false; multiple synchronous Agent calls in one message still run concurrently) and run long commands in the foreground with a generous timeout. If you must background something, use the harness's blocking result mechanism, such as Pi's `get_subagent_result` with `wait: true` or Claude Code's `TaskOutput` with `block=true`, in the same turn until it finishes. Only end your turn when you are returning the final report below.
 
 ## Return format
 
@@ -237,7 +237,7 @@ REVIEW_SUMMARY:
 ```
 
 When the subagent returns:
-- If it returns without the final report because it stopped to "wait" for background reviewers or a background E2E run, its background children are already dead (a subagent's background tasks are killed when its turn ends). Do not wait for them. Resume the same subagent via SendMessage, tell it explicitly that its background tasks were killed and will never notify, and instruct it to redo that work synchronously (reviewers with run_in_background: false, long commands in the foreground or blocked on with TaskOutput block=true) and to end its turn only with the final report. Check what already exists (commits, the PR) first and say so in the resume message so it doesn't recreate them.
+- If it returns without the final report because it stopped to "wait" for background reviewers or a background E2E run, its background children are already dead (a subagent's background tasks are killed when its turn ends). Do not wait for them. Resume the same subagent through the harness's resume mechanism, such as Pi's `Agent` tool with `resume` or Claude Code's `SendMessage`. Tell it explicitly that its background tasks were killed and will never notify, and instruct it to redo that work synchronously (reviewers with run_in_background: false, long commands in the foreground, or blocking through the harness-specific result tool) and to end its turn only with the final report. Check what already exists (commits, the PR) first and say so in the resume message so it doesn't recreate them.
 - If it reports blockers it couldn't resolve (review findings it couldn't fix, rebase conflicts, push rejections), surface them to the user.
 - Otherwise, extract the PR URL and review summary for the final report, then continue to step 4.
 
@@ -332,7 +332,7 @@ You are fixing failing CI for the PR that closes GitHub issue #<N> in <owner>/<r
 
 3. Fix the root cause, not the symptom. If a test is legitimately failing, fix the code; only change the test if the test itself is wrong. For code changes, read the implement skill at `~/.agents/skills/implement/SKILL.md` and follow its implementation and testing workflow, treating the issue and CI failure as the spec. Do not invoke code-review here; the ship-it review has already run. Respect root and subdirectory CLAUDE.md files; violations are review failures.
 
-4. Re-run the full validation suite locally until it passes. You are a subagent: never end your turn to wait for a background task (ending your turn kills it and its notification never arrives); run long commands in the foreground with a generous timeout, or block on a backgrounded task with TaskOutput (block=true) in the same turn.
+4. Re-run the full validation suite locally until it passes. You are a subagent: never end your turn to wait for a background task (ending your turn kills it and its notification never arrives); run long commands in the foreground with a generous timeout. If background work is unavoidable, block through the harness-specific result tool in the same turn.
 
 5. Commit your fix with a `[Fix]` message describing what broke, then push to the PR branch:
 
