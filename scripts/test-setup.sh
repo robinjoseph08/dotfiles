@@ -467,6 +467,20 @@ EOF
   [[ ! -e "$home/Library/Application Support/Code" ]]
 )
 
+test_aliases_omit_macos_ls_flags_on_linux() (
+  unalias ls 2>/dev/null || true
+
+  OSTYPE=linux-gnu
+  source "$DOTFILES_REPO/.aliases"
+  if alias ls >/dev/null 2>&1; then
+    fail 'Expected the macOS ls alias to be omitted on Linux.'
+  fi
+
+  OSTYPE=darwin24
+  source "$DOTFILES_REPO/.aliases"
+  [[ $(alias ls) == "alias ls='ls -G'" ]]
+)
+
 test_shell_and_tmux_guards() {
   grep -Fq 'if command -v brew > /dev/null 2>&1; then' "$DOTFILES_REPO/.bash_profile"
   grep -Fq '[[ -f "$ZSH/oh-my-zsh.sh" ]]' "$DOTFILES_REPO/.zshrc"
@@ -512,6 +526,7 @@ test_macos_installs_missing_oh_my_zsh
 test_missing_optional_tools_are_skipped
 test_available_optional_tools_are_configured
 test_linux_entrypoint_omits_incompatible_steps
+test_aliases_omit_macos_ls_flags_on_linux
 test_shell_and_tmux_guards
 test_git_credential_helper_uses_git_exec_path
 
