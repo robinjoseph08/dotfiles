@@ -315,10 +315,10 @@ export default function (pi: ExtensionAPI) {
             theme.fg("error", model),
             theme.fg("bashMode", `pi v${piVersion}`),
             theme.fg("warning", context),
-            theme.fg("dim", `$${sessionCost.toFixed(3)} · ${quota}`),
             branch,
             theme.fg("mdCode", projectName),
             theme.fg("syntaxFunction", agentRuntime),
+            theme.fg("dim", `$${sessionCost.toFixed(3)} · ${quota}`),
           ];
 
           const extensionStatuses = [...footerData.getExtensionStatuses().values()].filter(Boolean);
