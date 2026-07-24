@@ -6,7 +6,9 @@ const OPENAI_AUTH_CLAIM = "https://api.openai.com/auth";
 
 export interface RemainingQuotas {
   fiveHour?: number;
+  fiveHourResetAt?: number;
   weekly?: number;
+  weeklyResetAt?: number;
 }
 
 type UnknownRecord = Record<string, unknown>;
@@ -37,27 +39,84 @@ function remainingPercent(window: unknown): number | undefined {
   return used == null ? undefined : clampPercent(100 - used);
 }
 
+function resetAtMilliseconds(window: unknown, now: number): number | undefined {
+  const record = asRecord(window);
+  if (!record) return undefined;
+
+  const resetAtValue = record.reset_at ?? record.reset_time_ms ?? record.nextResetTime;
+  const numericReset = numberValue(resetAtValue);
+  if (numericReset != null) {
+    const milliseconds = numericReset < 1e12 ? numericReset * 1_000 : numericReset;
+    return Number.isFinite(milliseconds) ? milliseconds : undefined;
+  }
+
+  if (typeof resetAtValue === "string") {
+    const milliseconds = Date.parse(resetAtValue);
+    if (Number.isFinite(milliseconds)) return milliseconds;
+  }
+
+  const resetAfterSeconds = numberValue(record.reset_after_seconds);
+  return resetAfterSeconds == null ? undefined : now + resetAfterSeconds * 1_000;
+}
+
+export function formatTimeUntilReset(resetAt: number | undefined, now = Date.now()): string | undefined {
+  if (resetAt == null || resetAt <= now) return undefined;
+
+  const totalSeconds = Math.ceil((resetAt - now) / 1_000);
+
+  const days = Math.floor(totalSeconds / (24 * 60 * 60));
+  const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / (60 * 60));
+  const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
+
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m`;
+  return "<1m";
+}
+
 type QuotaWindow = "fiveHour" | "weekly";
 
 function windowFromDuration(window: unknown): QuotaWindow | undefined {
   const seconds = numberValue(asRecord(window)?.limit_window_seconds);
   if (seconds == null) return undefined;
-  return seconds <= 24 * 60 * 60 ? "fiveHour" : "weekly";
+  if (seconds <= 6 * 60 * 60) return "fiveHour";
+  if (seconds >= 6 * 24 * 60 * 60) return "weekly";
+  return undefined;
+}
+
+function normalizeWindow(window: unknown, fallback: QuotaWindow): unknown {
+  const record = asRecord(window);
+  if (!record) return window;
+
+  const nestedKeys =
+    fallback === "fiveHour"
+      ? ["primary_window", "primary", "five_hour_limit", "five_hour"]
+      : ["secondary_window", "secondary", "weekly_limit", "weekly"];
+  const nested = asRecord(firstValue(record, nestedKeys));
+  return nested ? { ...record, ...nested } : window;
 }
 
 function assignWindow(
   quotas: RemainingQuotas,
   window: unknown,
   fallback: QuotaWindow,
+  now: number,
 ): void {
-  const remaining = remainingPercent(window);
-  if (remaining == null) return;
+  const normalizedWindow = normalizeWindow(window, fallback);
+  const remaining = remainingPercent(normalizedWindow);
+  const resetAt = resetAtMilliseconds(normalizedWindow, now);
+  if (remaining == null && resetAt == null) return;
 
-  const durationWindow = windowFromDuration(window);
-  if (durationWindow) {
-    quotas[durationWindow] = remaining;
+  const durationWindow = windowFromDuration(normalizedWindow);
+  const target = durationWindow ?? fallback;
+  const overwrite = durationWindow != null;
+
+  if (target === "fiveHour") {
+    if (remaining != null && (overwrite || quotas.fiveHour == null)) quotas.fiveHour = remaining;
+    if (resetAt != null && (overwrite || quotas.fiveHourResetAt == null)) quotas.fiveHourResetAt = resetAt;
   } else {
-    quotas[fallback] ??= remaining;
+    if (remaining != null && (overwrite || quotas.weekly == null)) quotas.weekly = remaining;
+    if (resetAt != null && (overwrite || quotas.weeklyResetAt == null)) quotas.weeklyResetAt = resetAt;
   }
 }
 
@@ -68,17 +127,17 @@ function firstValue(record: UnknownRecord, keys: string[]): unknown {
   return undefined;
 }
 
-export function parseRemainingQuotas(payload: unknown): RemainingQuotas {
+export function parseRemainingQuotas(payload: unknown, now = Date.now()): RemainingQuotas {
   const response = asRecord(payload);
   if (!response) return {};
 
   const rateLimits = asRecord(response.rate_limit) ?? asRecord(response.rate_limits);
   if (rateLimits) {
     const quotas: RemainingQuotas = {};
-    assignWindow(quotas, firstValue(rateLimits, ["five_hour_limit", "five_hour"]), "fiveHour");
-    assignWindow(quotas, firstValue(rateLimits, ["weekly_limit", "weekly"]), "weekly");
-    assignWindow(quotas, firstValue(rateLimits, ["primary_window", "primary"]), "fiveHour");
-    assignWindow(quotas, firstValue(rateLimits, ["secondary_window", "secondary"]), "weekly");
+    assignWindow(quotas, firstValue(rateLimits, ["five_hour_limit", "five_hour"]), "fiveHour", now);
+    assignWindow(quotas, firstValue(rateLimits, ["weekly_limit", "weekly"]), "weekly", now);
+    assignWindow(quotas, firstValue(rateLimits, ["primary_window", "primary"]), "fiveHour", now);
+    assignWindow(quotas, firstValue(rateLimits, ["secondary_window", "secondary"]), "weekly", now);
     return quotas;
   }
 
@@ -91,14 +150,13 @@ export function parseRemainingQuotas(payload: unknown): RemainingQuotas {
   for (const limit of records) {
     const unitWindow = String(limit.unit) === "3" ? "fiveHour" : String(limit.unit) === "6" ? "weekly" : undefined;
     const classifiedWindow = windowFromDuration(limit) ?? unitWindow;
-    const remaining = remainingPercent(limit);
-    if (classifiedWindow && remaining != null) quotas[classifiedWindow] = remaining;
+    if (classifiedWindow) assignWindow(quotas, limit, classifiedWindow, now);
   }
 
   for (const [index, limit] of records.entries()) {
     const unit = String(limit.unit);
     if (windowFromDuration(limit) || unit === "3" || unit === "6") continue;
-    assignWindow(quotas, limit, index === 0 ? "fiveHour" : "weekly");
+    assignWindow(quotas, limit, index === 0 ? "fiveHour" : "weekly", now);
   }
   return quotas;
 }

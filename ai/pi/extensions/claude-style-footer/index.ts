@@ -2,7 +2,7 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 import { truncateToWidth } from "@earendil-works/pi-tui";
 import { basename } from "node:path";
 
-import { loadOpenAiCodexQuotas } from "./quota.ts";
+import { formatTimeUntilReset, loadOpenAiCodexQuotas } from "./quota.ts";
 
 const GIT_REFRESH_MS = 10_000;
 const PULL_REQUEST_REFRESH_MS = 60_000;
@@ -166,7 +166,9 @@ export default function (pi: ExtensionAPI) {
       let pullRequest: PullRequest | undefined;
       let pullRequestRequestId = 0;
       let fiveHourQuota: number | undefined;
+      let fiveHourResetAt: number | undefined;
       let weeklyQuota: number | undefined;
+      let weeklyResetAt: number | undefined;
 
       const requestRender = () => {
         if (!disposed) tui.requestRender();
@@ -241,7 +243,9 @@ export default function (pi: ExtensionAPI) {
       const refreshQuota = async () => {
         const quotas = await loadOpenAiCodexQuotas(ctx).catch(() => ({}));
         fiveHourQuota = quotas.fiveHour;
+        fiveHourResetAt = quotas.fiveHourResetAt;
         weeklyQuota = quotas.weekly;
+        weeklyResetAt = quotas.weeklyResetAt;
         requestRender();
       };
 
@@ -306,7 +310,11 @@ export default function (pi: ExtensionAPI) {
             `agent:${formatAgentRuntime(currentAgentRuntime())}` +
             ` · turn:${formatAgentRuntime(currentTurnRuntime())}`;
           const sessionCost = calculateSessionCost(ctx);
-          const quota = `5h:${fiveHourQuota == null ? "?" : `${Math.round(fiveHourQuota)}%`} week:${weeklyQuota == null ? "?" : `${Math.round(weeklyQuota)}%`} left`;
+          const fiveHourReset = formatTimeUntilReset(fiveHourResetAt);
+          const weeklyReset = formatTimeUntilReset(weeklyResetAt);
+          const fiveHourUsage = `5h:${fiveHourQuota == null ? "?" : `${Math.round(fiveHourQuota)}%`}${fiveHourReset ? ` (${fiveHourReset})` : ""}`;
+          const weeklyUsage = `week:${weeklyQuota == null ? "?" : `${Math.round(weeklyQuota)}%`}${weeklyReset ? ` (${weeklyReset})` : ""}`;
+          const quota = `${fiveHourUsage} ${weeklyUsage} left`;
 
           const segments = [
             theme.fg("error", model),
