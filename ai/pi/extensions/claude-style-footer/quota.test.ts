@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { formatTimeUntilReset, parseRemainingQuotas } from "./quota.ts";
+import { formatQuotaUsage, formatTimeUntilReset, parseRemainingQuotas } from "./quota.ts";
 
 test("parses remaining and used percentages from named windows", () => {
   assert.deepEqual(
@@ -78,6 +78,26 @@ test("parses nested named windows and preserves ambiguous duration fallbacks", (
   );
 });
 
+test("preserves reset-only windows and falls back from malformed absolute resets", () => {
+  const now = 1_700_000_000_000;
+
+  assert.deepEqual(
+    parseRemainingQuotas(
+      {
+        rate_limit: {
+          five_hour_limit: { reset_at: "invalid", reset_after_seconds: 90 },
+          weekly_limit: { reset_time_ms: now + 604_800_000 },
+        },
+      },
+      now,
+    ),
+    {
+      fiveHourResetAt: now + 90_000,
+      weeklyResetAt: now + 604_800_000,
+    },
+  );
+});
+
 test("parses legacy data limits by unit", () => {
   assert.deepEqual(
     parseRemainingQuotas({
@@ -104,12 +124,32 @@ test("formats compact reset countdowns", () => {
   assert.equal(formatTimeUntilReset(now + 2 * 60 * 60_000 + 8 * 60_000, now), "2h 8m");
   assert.equal(formatTimeUntilReset(now + 42 * 60_000, now), "42m");
   assert.equal(formatTimeUntilReset(now + 30_000, now), "<1m");
+  assert.equal(formatTimeUntilReset(now + 59_001, now), "1m");
+  assert.equal(formatTimeUntilReset(now + 3_599_001, now), "1h 0m");
+  assert.equal(formatTimeUntilReset(now + 86_399_001, now), "1d 0h");
   assert.equal(formatTimeUntilReset(now - 1, now), undefined);
   assert.equal(formatTimeUntilReset(undefined, now), undefined);
+  assert.equal(formatTimeUntilReset(Number.POSITIVE_INFINITY, now), undefined);
+});
+
+test("formats reset countdowns beside quota usage", () => {
+  const now = 1_700_000_000_000;
+
+  assert.equal(formatQuotaUsage("5h", 74.6, now + 2 * 60 * 60_000 + 8 * 60_000, now), "5h:75% (2h 8m)");
+  assert.equal(formatQuotaUsage("week", undefined, undefined, now), "week:?");
 });
 
 test("ignores malformed payloads and values", () => {
   assert.deepEqual(parseRemainingQuotas(null), {});
   assert.deepEqual(parseRemainingQuotas({ rate_limit: { five_hour_limit: { used_percent: "nope" } } }), {});
   assert.deepEqual(parseRemainingQuotas({ data: { limits: "not-an-array" } }), {});
+  assert.deepEqual(
+    parseRemainingQuotas({
+      rate_limit: {
+        primary_window: { reset_after_seconds: Number.MAX_VALUE },
+        secondary_window: { remaining_percent: 40, limit_window_seconds: -1 },
+      },
+    }),
+    { weekly: 40 },
+  );
 });

@@ -3,6 +3,7 @@ import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 const CODEX_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage";
 const CODEX_TIMEOUT_MS = 20_000;
 const OPENAI_AUTH_CLAIM = "https://api.openai.com/auth";
+const MAX_TIMESTAMP_MS = 8.64e15;
 
 export interface RemainingQuotas {
   fiveHour?: number;
@@ -39,6 +40,12 @@ function remainingPercent(window: unknown): number | undefined {
   return used == null ? undefined : clampPercent(100 - used);
 }
 
+function validTimestamp(milliseconds: number): number | undefined {
+  return Number.isFinite(milliseconds) && milliseconds > 0 && milliseconds <= MAX_TIMESTAMP_MS
+    ? milliseconds
+    : undefined;
+}
+
 function resetAtMilliseconds(window: unknown, now: number): number | undefined {
   const record = asRecord(window);
   if (!record) return undefined;
@@ -46,21 +53,22 @@ function resetAtMilliseconds(window: unknown, now: number): number | undefined {
   const resetAtValue = record.reset_at ?? record.reset_time_ms ?? record.nextResetTime;
   const numericReset = numberValue(resetAtValue);
   if (numericReset != null) {
-    const milliseconds = numericReset < 1e12 ? numericReset * 1_000 : numericReset;
-    return Number.isFinite(milliseconds) ? milliseconds : undefined;
+    return validTimestamp(numericReset < 1e12 ? numericReset * 1_000 : numericReset);
   }
 
   if (typeof resetAtValue === "string") {
-    const milliseconds = Date.parse(resetAtValue);
-    if (Number.isFinite(milliseconds)) return milliseconds;
+    const milliseconds = validTimestamp(Date.parse(resetAtValue));
+    if (milliseconds != null) return milliseconds;
   }
 
   const resetAfterSeconds = numberValue(record.reset_after_seconds);
-  return resetAfterSeconds == null ? undefined : now + resetAfterSeconds * 1_000;
+  return resetAfterSeconds == null || resetAfterSeconds < 0
+    ? undefined
+    : validTimestamp(now + resetAfterSeconds * 1_000);
 }
 
 export function formatTimeUntilReset(resetAt: number | undefined, now = Date.now()): string | undefined {
-  if (resetAt == null || resetAt <= now) return undefined;
+  if (!Number.isFinite(resetAt) || !Number.isFinite(now) || resetAt! <= now) return undefined;
 
   const totalSeconds = Math.ceil((resetAt - now) / 1_000);
 
@@ -74,11 +82,21 @@ export function formatTimeUntilReset(resetAt: number | undefined, now = Date.now
   return "<1m";
 }
 
+export function formatQuotaUsage(
+  label: string,
+  remaining: number | undefined,
+  resetAt: number | undefined,
+  now = Date.now(),
+): string {
+  const reset = formatTimeUntilReset(resetAt, now);
+  return `${label}:${remaining == null ? "?" : `${Math.round(remaining)}%`}${reset ? ` (${reset})` : ""}`;
+}
+
 type QuotaWindow = "fiveHour" | "weekly";
 
 function windowFromDuration(window: unknown): QuotaWindow | undefined {
   const seconds = numberValue(asRecord(window)?.limit_window_seconds);
-  if (seconds == null) return undefined;
+  if (seconds == null || seconds <= 0) return undefined;
   if (seconds <= 6 * 60 * 60) return "fiveHour";
   if (seconds >= 6 * 24 * 60 * 60) return "weekly";
   return undefined;

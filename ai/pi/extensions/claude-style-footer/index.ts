@@ -2,7 +2,11 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 import { truncateToWidth } from "@earendil-works/pi-tui";
 import { basename } from "node:path";
 
-import { formatTimeUntilReset, loadOpenAiCodexQuotas } from "./quota.ts";
+import {
+  formatQuotaUsage,
+  loadOpenAiCodexQuotas,
+  type RemainingQuotas,
+} from "./quota.ts";
 
 const GIT_REFRESH_MS = 10_000;
 const PULL_REQUEST_REFRESH_MS = 60_000;
@@ -165,10 +169,7 @@ export default function (pi: ExtensionAPI) {
       let gitChanges: GitChanges = { additions: 0, deletions: 0, untracked: 0, dirty: false };
       let pullRequest: PullRequest | undefined;
       let pullRequestRequestId = 0;
-      let fiveHourQuota: number | undefined;
-      let fiveHourResetAt: number | undefined;
-      let weeklyQuota: number | undefined;
-      let weeklyResetAt: number | undefined;
+      let quotas: RemainingQuotas = {};
 
       const requestRender = () => {
         if (!disposed) tui.requestRender();
@@ -241,11 +242,7 @@ export default function (pi: ExtensionAPI) {
       };
 
       const refreshQuota = async () => {
-        const quotas = await loadOpenAiCodexQuotas(ctx).catch(() => ({}));
-        fiveHourQuota = quotas.fiveHour;
-        fiveHourResetAt = quotas.fiveHourResetAt;
-        weeklyQuota = quotas.weekly;
-        weeklyResetAt = quotas.weeklyResetAt;
+        quotas = await loadOpenAiCodexQuotas(ctx).catch(() => ({}));
         requestRender();
       };
 
@@ -310,20 +307,18 @@ export default function (pi: ExtensionAPI) {
             `agent:${formatAgentRuntime(currentAgentRuntime())}` +
             ` · turn:${formatAgentRuntime(currentTurnRuntime())}`;
           const sessionCost = calculateSessionCost(ctx);
-          const fiveHourReset = formatTimeUntilReset(fiveHourResetAt);
-          const weeklyReset = formatTimeUntilReset(weeklyResetAt);
-          const fiveHourUsage = `5h:${fiveHourQuota == null ? "?" : `${Math.round(fiveHourQuota)}%`}${fiveHourReset ? ` (${fiveHourReset})` : ""}`;
-          const weeklyUsage = `week:${weeklyQuota == null ? "?" : `${Math.round(weeklyQuota)}%`}${weeklyReset ? ` (${weeklyReset})` : ""}`;
+          const fiveHourUsage = formatQuotaUsage("5h", quotas.fiveHour, quotas.fiveHourResetAt);
+          const weeklyUsage = formatQuotaUsage("week", quotas.weekly, quotas.weeklyResetAt);
           const quota = `${fiveHourUsage} ${weeklyUsage} left`;
 
           const segments = [
             theme.fg("error", model),
             theme.fg("bashMode", `pi v${piVersion}`),
             theme.fg("warning", context),
+            theme.fg("dim", `$${sessionCost.toFixed(3)} · ${quota}`),
             branch,
             theme.fg("mdCode", projectName),
             theme.fg("syntaxFunction", agentRuntime),
-            theme.fg("dim", `$${sessionCost.toFixed(3)} · ${quota}`),
           ];
 
           const extensionStatuses = [...footerData.getExtensionStatuses().values()].filter(Boolean);
