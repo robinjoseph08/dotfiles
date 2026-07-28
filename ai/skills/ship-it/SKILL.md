@@ -1,296 +1,330 @@
 ---
 name: ship-it
-description: Ship current work by committing and rebasing locally, completing a Standards/Spec preflight and iterative code review through independent reviewer subagents, then pushing once and creating or updating the PR. Use when the user says /ship-it, "ship it", "send it", "open a PR", or wants to push their current work up for review.
+description: Ship current work through resumable preparation, review, validation, push, and PR stages. Use when the user says /ship-it, "ship it", "send it", "open a PR", or wants to push current work for review.
 user-invocable: true
 ---
 
 # Ship It
 
-Get the current work committed, reviewed locally, pushed once, and PR'd in one shot.
+Ship reviewed work without making one agent carry the entire workflow.
 
-## Overview
+## Coordinator model
 
-This skill handles the full "I'm done coding, get this up for review" workflow. It figures out what state the repo is in and does the right thing at each step rather than failing on edge cases.
+The agent invoking this skill is the coordinator. It performs cheap discovery, maintains a durable checkpoint, launches independent reviewers directly, and delegates one bounded mutation or publication stage at a time. Agents that can change the working tree run serially.
 
-## Step 1: Assess the situation
+The coordinator must not hand the full workflow to one subagent. It also must not depend on resuming an ephemeral agent ID. If a delegated stage stops, launch a fresh agent from Git, GitHub, and the checkpoint. Review agents never need to spawn child agents.
 
-Run `git status`, `git branch --show-current`, and `git log --oneline -5` to understand:
-- What branch are we on?
-- Are there uncommitted changes (staged or unstaged)?
-- Are there untracked files that should be included?
+Stages:
 
-## Step 2: Ensure we're on a feature branch
+1. Prepare the branch
+2. Run Standards and Spec preflight review
+3. Adjudicate and fix preflight findings in bounded batches
+4. Run one normal review round
+5. Adjudicate and fix that round in bounded batches
+6. Verify a patch-equivalent base refresh when needed
+7. Repair a failed final gate when needed
+8. Run the final gate and push
+9. Create or update the PR
 
-If on `master`, create a new branch. Derive the name from the uncommitted changes or recent commits:
-- Look at what files changed and the nature of the changes
-- Generate a kebab-case branch name like `add-dark-mode-toggle` or `fix-cover-cache-busting`
-- Keep it short but descriptive (3-5 words max)
-- Create and switch to it: `git checkout -b <branch-name>`
+## Global invariants
 
-If already on a non-master branch, stay on it.
+- Do not push until review has converged and the final CI-equivalent gate has passed.
+- Every review pass uses a newly spawned independent reviewer subagent. Never reuse an implementation, coordinator, stage, or fix agent as a reviewer.
+- Reviewers never modify files, commit, push, create reviews, or post PR comments.
+- The coordinator launches review agents synchronously and in parallel where appropriate. Delegated mutation and publication stages run in the foreground. Never end a turn waiting for background notifications.
+- Iterative fixes use targeted checks followed by the repository's normal full check.
+- The complete CI-equivalent suite runs only in the final publish stage. A failed final gate may be repeated only after diagnosis and stabilization.
+- In initial mode, the first push occurs after review convergence. In repair mode, each CI repair cycle gets one post-convergence push. Never push intermediate review fixes.
+- Git and GitHub are authoritative. Treat checkpoint summaries as navigation, then verify actual state.
+- Retry exhaustion is not a blocker until the coordinator fetches the remote default branch and proves the pinned base is still current. A newer base may already resolve the finding or invalidate its evidence.
+- A conflict-free rebase of a converged diff may preserve review evidence only when `git range-diff` proves the feature commits patch-equivalent. It still requires one fresh integration verification against the rebased complete diff and the new upstream range before validation or push.
+- Do not store secrets, expanded environment values, auth data, or full command logs in the checkpoint.
 
-## Step 3: Commit uncommitted changes
+## Step 1: Discover the invocation
 
-If there are uncommitted changes (staged, unstaged, or untracked files):
-
-1. Stage the relevant files. Use `git add` with specific file paths rather than `git add -A` to avoid accidentally including sensitive files or build artifacts. Check `.gitignore` — don't add ignored files. For untracked files, use your best judgment based on context to decide whether they belong in the commit — if you have low confidence because the files seem unrelated to the work on the branch, ask the user before staging them.
-2. Write a commit message following the project's `[Category] Description` format. Pick the category that best fits:
-   - `[Frontend]`, `[Backend]`, `[Feature]`, `[Feat]` for features
-   - `[Fix]` for bug fixes
-   - `[Docs]` for documentation
-   - `[Test]`, `[E2E]` for tests
-   - `[CI]`, `[CD]` for CI/CD
-3. The message should summarize the overall change, not list individual files. Focus on the "why" — what does this change accomplish?
-4. Commit normally (do not skip hooks with `--no-verify`).
-
-If there are no uncommitted changes, skip this step.
-
-## Step 4: Rebase off master
-
-Check if the branch is behind master:
+Run cheap commands directly:
 
 ```bash
-git fetch origin master
-git log HEAD..origin/master --oneline
+git status --short --branch
+git branch --show-current
+git log --oneline -5
+git rev-parse --show-toplevel
+git rev-parse --absolute-git-dir
 ```
 
-If there are commits on master that aren't in this branch, rebase:
+Discover the remote default branch rather than assuming `master` or `main`. Identify three command-agnostic validation tiers from caller context, repository instructions, workflows, and task-runner configuration:
+
+1. **Targeted checks** for changed files and behavior.
+2. **Full check** for the normal local lint, unit-test, type-check, and build gate.
+3. **CI-equivalent suite** for every required check, including slower integration, browser, race, packaging, or topology checks.
+
+One command may serve both the full-check and CI-equivalent tiers. Follow the repository's interface rather than assuming a task runner.
+
+Also determine:
+
+- interactive or autonomous mode
+- issue or spec source, if any
+- summary and test evidence supplied by the caller
+- required PR body prefix, such as `Closes #123`
+- current branch, existing remote branch, and existing PR
+
+## Step 2: Create or resume the checkpoint
+
+Use this worktree-specific path outside tracked files:
 
 ```bash
-git rebase origin/master
+git_dir="$(git rev-parse --absolute-git-dir)"
+checkpoint="$git_dir/ship-it-checkpoint-v1.md"
+lock="$git_dir/ship-it-checkpoint-v1.lock"
 ```
 
-If the rebase has conflicts, and you feel confident that you can merge them correctly, do so. If not, stop and tell the user.
-
-## Step 5: Review preflight and iterative fix loop
-
-Before pushing or creating the PR, run the code-review skill once as a Standards/Spec preflight against the local branch diff. Resolve its findings, then run the existing review → validate → fix → re-review loop until a full round produces nothing worth fixing. Track the preflight and normal-loop findings separately so you can present one consolidated report at the end without collapsing their different review models.
-
-**Do not push during this step.** Keep the initial commits and every review-fix commit local until the entire review loop converges. This ensures CI only sees the final reviewed branch state.
-
-### Independent-review invariant
-
-Every review pass must run in a newly spawned reviewer subagent. This includes both Standards/Spec preflight axes, every normal-loop lens, and every later re-review or scoped verification. The shipping agent coordinates the process, validates findings against the code, applies fixes, and maintains the findings ledger, but it must never substitute its own review for a reviewer subagent.
-
-Keep each reviewer independent of implementation work:
-
-- Never use an implementation agent, the shipping agent, or an agent that applied fixes as a reviewer.
-- Spawn a fresh reviewer subagent for each pass. If ship-it is itself running inside a subagent, it must spawn child reviewer subagents.
-- Give reviewers the diff, relevant repository standards or spec, base/head SHAs, commit-derived change summary, and any ledger needed to avoid duplicates. Do not give them implementation transcripts, private implementation reasoning, anticipated findings, or the shipping agent's conclusions.
-- Let the shipping agent validate and fix findings only after the independent reviewer returns. Any fixes must then be checked by another fresh reviewer subagent.
-
-### Standards and Spec preflight
-
-Read the code-review skill at `~/.agents/skills/code-review/SKILL.md` and follow its full two-axis workflow once, with these ship-it-specific inputs and overrides:
-
-- Use `origin/master` as the fixed point; do not ask the user to choose one.
-- Use issue or spec context supplied by the caller first. Otherwise follow the skill's discovery process using commit messages, the branch name, and repository files. No PR is expected yet, so do not depend on PR metadata.
-- If no spec exists during an interactive ship-it run, ask the user as the code-review skill directs. If ship-it is running autonomously with no human available, skip the Spec sub-agent and record `no spec available` instead of blocking.
-- Run the Standards and Spec sub-agents synchronously and in parallel. The no-background-work and no-PR-comments rules below apply to these reviewers too.
-- Preserve the Standards and Spec reports as separate axes. Do not merge or rerank their findings.
-
-Validate every preflight finding against the cited standard, spec, and current code. Record one outcome and a concrete reason for each finding:
-
-- **Fixed** — valid and worth addressing before the normal review loop.
-- **Not fixed** — valid, but the proposed change would be worse than the current code or is only a low-value smell judgment.
-- **Invalid** — factually wrong or inapplicable.
-
-Treat a valid documented-standard violation or spec mismatch as worth fixing. Treat the code-review skill's smell baseline as judgment calls: fix a smell when it yields a concrete design improvement, and otherwise record why it is not worth changing.
-
-If the preflight produces fixes:
-
-1. Apply all worthwhile fixes.
-2. Run targeted validation and the project's full required validation suite.
-3. Commit the fixes locally using the project's `[Category] Description` format. Do not push yet.
-
-Run this preflight only once. Do not rerun code-review after its fixes; the normal ship-it loop reviews the updated full branch diff, including every preflight fix.
-
-### The normal loop
-
-Repeat the following until a full review round produces zero findings that are both valid and worth fixing (per the value bar in 5b). A round whose findings are all invalid or all cosmetic is a clean round; one clean round exits the loop.
-
-**5a. Run a full review.**
-
-**Round 1 is a three-lens panel.** Spawn three reviewer subagents in parallel, each reviewing the entire local branch diff through a different lens:
-
-- **Robustness lens**: runtime behavior on bad inputs. Error paths, parsing and success gates, silent failure modes, edge values (null, empty, missing fields), boundary conditions. Instruct it: "for every place the code decides success vs failure, ask what inputs pass the gate that shouldn't."
-- **Test-strength lens**: would a plausible regression pass the suite? Assertion tightness, untested error branches, plumbing no test observes. Instruct it: "for each behavior, name a realistic code change that breaks it but passes all existing tests."
-- **Surface lens**: user-facing and doc accuracy. Help text, error message wording versus the code's actual check, README claims versus behavior, comments describing things that don't exist yet.
-
-Dedupe the three result sets before validating; the same issue found by multiple lenses is one finding.
-
-**Never end your turn to wait for background work.** This matters most when ship-it itself runs as a subagent (for example under the afk skill): a subagent that stops to "wait for completion notifications" kills its own background children, and the notifications never arrive, so the whole workflow stalls. Spawn reviewer subagents synchronously (`run_in_background: false`; multiple synchronous Agent calls in one message still run concurrently). Run long validation commands (builds, E2E suites) in the foreground with a generous timeout. If one must be backgrounded, use the harness's blocking result mechanism, such as Pi's `get_subagent_result` with `wait: true` or Claude Code's `TaskOutput` with `block=true`, in the same turn until it finishes. Only end your turn when the loop has fully exited and the final report is ready.
-
-**Rounds 2 and later use a single fresh reviewer subagent.** Their job is verifying fixes and catching what the panel missed, not re-discovery from scratch. Never reuse a reviewer from an earlier round. Give this reviewer the accumulated findings ledger (every prior finding with its outcome and reason, including dismissals and cosmetic non-fixes), and instruct it explicitly:
-
-- Do not re-report anything already on the ledger unless a later fix made it worse. If you think a ledger item was mis-sized, say so by ID instead of reporting it as new.
-- Only report findings that would pass the value bar in 5b (better runtime behavior, a test that catches a plausible regression, or a factually wrong statement).
-- A zero-findings report is the expected terminal state of a healthy loop, not a failure to do the job. Do not stretch for marginal findings to justify the round.
-
-For each reviewer:
-
-- Spawn a fresh reviewer subagent first; never perform the review in the shipping agent's context.
-- **If the `requesting-code-review` skill is available** (check the available skills), instruct the reviewer subagent to use it. It's purpose-built for code review and knows how to check against project conventions.
-- **If it's not available**, ask the reviewer subagent to review the local diff (`git diff origin/master...HEAD`) for correctness, style, and potential issues.
-
-Give every reviewer:
-- What was implemented (summarize from the commits)
-- The base SHA (`origin/master`) and head SHA (`HEAD`)
-- A brief description of the change
-- Its lens (round 1 only)
-- An explicit instruction to categorize each finding by severity (critical / important / minor / nit) and to return findings as structured text
-
-**Every round reviews the entire local branch diff, not just the new changes.** Fixes can introduce new issues or affect other parts of the code, so re-review from scratch each round.
-
-**5b. Validate each finding.** For every finding the reviewer returns, determine whether it's genuinely valid — read the relevant code, check the reviewer's claim, and decide. Record your validation decision and a brief reason for each finding. A finding can be:
-- **Valid** — the reviewer is correct and the issue is worth addressing
-- **Invalid** — either the reviewer is factually wrong (misread the code, concern doesn't apply, behavior is intentional), OR the finding is technically accurate but not worth doing (e.g., the "fix" would be worse than the status quo, purely stylistic in a way that doesn't match project conventions). Always record the concrete reason.
-
-You may also **reclassify severity** during validation if the reviewer mis-sized the issue (e.g., a "critical" that's really a nit, or a "minor" that's actually important). Record the original severity, the new severity, and why you changed it. Treat the reclassified severity as authoritative for the rest of the loop.
-
-Do not dismiss findings just because they feel minor or annoying. Dismiss only when you have a concrete reason.
-
-**Then apply the value bar to each valid finding.** A valid finding is **worth fixing** if at least one of these holds:
-
-- (a) fixing it changes runtime behavior for the better
-- (b) it adds or tightens a test that would catch a plausible regression the existing suite would miss
-- (c) it corrects a factually wrong statement in user-facing text, docs, or comments
-
-Valid `critical` and `important` findings pass the bar by definition; if one seems not to, it is probably mis-sized, so reclassify it.
-
-Findings that pass none of the three are **valid but cosmetic**: record them for the report, but do not fix them, and they do not count against loop exit. This explicitly includes changes that would arguably make the code cleaner or easier to read; judging that reliably is too error-prone, so cosmetic findings are never applied during the loop. They are surfaced in the final report so the user can cherry-pick any they want as follow-ups. When genuinely unsure whether a finding passes the bar, fix it.
-
-**5c. Fix every finding that passed the value bar.** Severity does not gate this step; a nit that passes the bar gets fixed, and a minor that fails it does not.
-
-  - A note about scope: In most cases, we want to leave code better than we found it. If we fixed something and find that we're doing it the old/wrong way somewhere else, it is in scope to fix all other locations so we don't have to make another PR to fix that later.
-  - A note about size: Even if it's a small change, don't consider it "not worth the churn". Commits are cheap, and everything will be squashed anyway. If it passes the bar, do it.
-  - A note about consistency: While generally, being consistent is good, if we never improve anything because it would make it "inconsistent compared to other callsites", then we'd never improve anything. If anything, it would make more sense to update other callsites to be consistent with the correct way to do things.
-  - A note about conventions: if a fix introduces or amends a convention (a glossary entry, naming rule, or doc policy), apply it across the entire tree in the same commit and state the rule in one place only. Later rounds enforcing a convention an earlier fix round created is churn; finish the sweep when the convention lands.
-
-Before committing, perform implementation sanity checks on the fix diff: exercise any error or cancel paths the fix adds, and sweep for collateral drift, meaning comments, docs, UI copy, and enumerations anywhere in the tree that the fix just invalidated. Update those in the same commit. This is part of applying the fix, not a substitute for the fresh reviewer subagent required after every fix round.
-
-If anything was fixed in this step:
-1. Commit the fixes locally (follow the project's `[Category] Description` format; a `[Fix]` prefix is usually appropriate).
-2. Do not push yet.
-3. Go back to step 5a and run another review round, scoped to what this round's fixes could have broken:
-   - If any fix changed runtime behavior or tests, run a full review round as usual.
-   - If the fixes only touched prose (docs, comments, UI copy), have the next reviewer verify just those fix commits and the files they touch. Prose cannot regress runtime behavior, so a clean scoped round exits the loop without another full branch pass.
-
-If no fixes were applied in this step, exit the loop.
-
-**Convergence guard.** If three consecutive rounds have each produced nothing above minor severity, the loop is in its tail: real defects are exhausted and full rounds are mostly rediscovering marginal issues. After fixing the current round's findings, run one scoped verification of those fixes instead of another full round, and exit if it comes back clean. Critical or important findings always reset this guard and force full rounds again.
-
-**5d. Accumulate all findings.** Across all rounds, keep a running list of every finding — every severity, both valid and invalid. Dedupe them (the same issue may be reported in multiple rounds, especially before a fix lands). Assign each deduped finding a stable **ID** based on its final (post-reclassification) severity: `C1, C2, …` for critical, `I1, I2, …` for important, `M1, M2, …` for minor, `N1, N2, …` for nit. IDs persist across rounds so the user can reference them.
-
-For each, record:
-- The ID (e.g. C1, I1, I2, M1, N1, etc)
-- Which round it was found in
-- The finding text
-- Final severity (and original severity if reclassified)
-- Validation outcome (fixed / cosmetic / invalid) and reason
-
-### Reviewer must not post to the PR
-
-**IMPORTANT: Do NOT post review comments to the PR itself** at any point — no `gh pr comment`, no `gh pr review`, no GitHub review comments, in any round. All review feedback stays in the conversation. Tell the reviewer subagent this explicitly when you spawn it, so it doesn't post either.
-
-## Step 6: Push the reviewed branch
-
-Only after the preflight and iterative review loop have fully converged, push the final reviewed branch state:
-
-```bash
-git push -u origin <branch-name>
-```
-
-This should be the first push performed by this workflow. If the branch already exists remotely, this should be the only push performed during this run.
-
-If the push is rejected because the remote branch has diverged (e.g., after a rebase), ask the user before force-pushing. Do not force-push without confirmation.
-
-## Step 7: Create or update the PR
-
-Check if a PR already exists for this branch:
-
-```bash
-gh pr view --json number,title,url 2>/dev/null
-```
-
-**If no PR exists**, create one:
-- The PR **title** must follow the `[Category] Description` commit message format, because after squash-and-merge this title becomes the commit message on master and feeds into changelog generation. If there's a single commit on the branch and its message already follows the format, use it directly as the PR title. For multiple commits, summarize the overall final change across all commits, including review fixes.
-- The PR **body** should include:
-  - `## Summary` with 1-3 bullet points describing the final reviewed change
-  - `## Test plan` with a bulleted list (not a checklist) of how to verify the change works
-- Use a HEREDOC for the body to preserve formatting:
-
-```bash
-gh pr create --title "[Category] Description" --body "$(cat <<'EOF'
-## Summary
-- ...
-
-## Test plan
-- ...
-EOF
-)"
-```
-
-**If a PR already exists**, check whether its title and body still describe the final reviewed scope. Update either one as needed. The title must follow the `[Category] Description` format:
-
-```bash
-gh pr edit --title "[Category] Updated description"
-```
-
-### Final report to the user
-
-Once the review loop has exited and the PR has been created or updated, present a single consolidated report with:
-
-1. **Code-review preflight.** Present the Standards and Spec axes separately. Include every finding with its **Fixed**, **Not fixed**, or **Invalid** outcome and reason. If the Spec axis was skipped, say why.
-2. **Rounds summary.** "Ran N rounds of iterative review." If fixes were applied, briefly list what was fixed in each round. Do not count the preflight as a normal review round.
-3. **All normal-loop findings, grouped by severity** (critical → important → minor → nit), with every point **labeled by its round number and ID** (`R1-C1`, `R2-I1`, `R1-M1`, `R3-N1`, …) so the user can reference them in follow-up. Within each group, show every deduped finding — including ones marked invalid. For each finding, show:
-   - The ID and the finding itself
-   - Its validation outcome: **Fixed**, **Cosmetic** (valid but did not pass the value bar, deliberately not applied), or **Invalid**
-   - If severity was reclassified, note the original severity (e.g., "reclassified from important")
-4. **Nothing hidden.** Even preflight or normal-loop findings you deemed invalid must appear in the report — the user gets to judge your validation calls. Do not silently drop anything.
-
-Example structure:
-
-```
-## Code-review preflight
-
+Acquire the lock with an atomic directory creation and record `PI_SESSION_ID` plus a timestamp inside it. The same parent session may resume its lock. If another session owns it, interactive mode asks before taking over and autonomous mode stops. Remove a stale lock only after explicitly reconciling the checkpoint and Git state.
+
+A new checkpoint contains:
+
+```markdown
+# Ship-it checkpoint v1
+
+Status: active
+Stage: prepare
+Mode: initial
+Completed base-refresh rounds: 0
+Pending base-refresh round: <none>
+Completed CI repair cycles: 0
+Pending CI repair cycle: <none>
+Hosted stale-check key: <none>
+Completed hosted rerun requests: 0
+Pending hosted rerun request: <none>
+Final report state: pending
+Final report path: <none>
+Final report digest: <none>
+Coordinator session: <PI_SESSION_ID or harness identity>
+Working directory: <absolute path>
+Branch: <branch or pending>
+Default branch: <remote/default>
+Base SHA: <pending>
+Review cycle: 1
+Reviewed HEAD: <pending>
+Final-gate HEAD: <none>
+Final-gate result: <not run>
+Pushed HEAD: <none>
+Autonomous: true|false
+PR URL: <none>
+Outcome: <pending>
+PR verification attempts: 0
+Blocker kind: <none>
+Blocker fingerprint: <none>
+
+## Caller context
+- Spec source: <issue, PRD, or none>
+- Summary: <bounded summary>
+- Test evidence: <bounded summary>
+- PR body prefix: <optional exact closing directive>
+- Issue identity: <owner/repo#number and URL, or none>
+
+## Validation tiers
+### Targeted
+- <commands or selection guidance>
+### Full check
+- <commands>
+### CI-equivalent
+- <commands>
+
+## Preflight ledger
 ### Standards
-- [Fixed] New parser duplicated the repository's required validation boundary; consolidated it behind the existing module.
-
+Pending.
 ### Spec
-- No findings.
+Pending or no spec available.
 
-Ran 2 rounds of review.
+## Normal review ledger
+No rounds yet.
 
-Round 1: fixed 2 critical, 1 important, 2 minor, 2 nit.
-Round 2: clean, nothing passed the value bar.
+## Pending work
+None.
 
-## Critical
-- **R1-C1** [Fixed] SQL injection in search handler — unsanitized user input in raw query
-- **R1-C2** [Fixed] Missing auth check on /users/:id/reset-password
-
-## Important
-- **R1-I1** [Fixed] Missing index on job_logs.job_id causing slow deletes
-- **R2-I2** [Invalid] "Race condition in worker pool" — reviewer missed the mutex at pkg/worker/pool.go:42
-
-## Minor
-- **R1-M1** [Fixed] Inconsistent error wrapping in new epub parser code
-- **R1-M2** [Fixed] Similar pre-existing error wrapping inconsistency in pkg/cbz/
-- **R2-M3** [Invalid] Suggestion to extract helper; would add indirection for a single call site
-- **R2-M4** [Invalid] "Variable name shadowing"; name is intentional, shadows outer scope by design
-
-## Nit
-- **R1-N1** [Fixed] Comment on unrelated file line 87 is slightly out of date
-- **R1-N2** [Fixed, reclassified from minor] Typo in new docstring added by this PR
-- **R2-N3** [Cosmetic] Move test helper below the method block; readability preference only, not applied
+## Stage history
+- Initialized at <HEAD and timestamp>.
 ```
 
-## No Notion tasks
+Write checkpoint changes atomically through an adjacent temporary file and rename when practical. Keep reports bounded, but preserve every finding, disposition, severity change, validation result, review-cycle invalidation, and commit SHA needed for the final report. Rebases and repair cycles archive prior review sections as history; they never delete findings.
 
-**Do not proactively create Notion tasks** for anything. If the user wants a Notion task, they'll ask.
+### Resume rules
+
+If a matching active checkpoint exists, reconcile it before launching a stage:
+
+- Verify working directory and branch. Do not apply another branch's checkpoint.
+- Compare checkpoint SHAs with `HEAD`, the remote branch, and any PR head.
+- If a review was interrupted before being saved, discard that unsaved result and use fresh reviewers.
+- A fix stage records its in-flight finding IDs before its first mutation. If it stops with a dirty tree or an unrecorded commit, route those same IDs to a fresh fix stage in recovery mode. Preserve their pending dispositions until that stage reconciles the diff, checks, and commit.
+- Preparation records `In-flight base refresh` before rebasing. On interruption, recover the same recorded old/new identities, expected remote SHA, and Git rebase state before another fetch or mutation.
+- Final repair records `In-flight final repair` before its first edit. A dirty tree or unrecorded commit routes the same failure fingerprint and starting SHA to a fresh final-repair agent in recovery mode; do not allocate or count another repair.
+- If an unexplained commit exists after the recorded SHA, inspect it, preserve existing findings, record it as unreviewed recovery work, and require a fresh normal review.
+- If preparation recorded a patch-equivalent refresh from a converged reviewed diff, require `integration-review` for the exact refreshed HEAD. Do not treat old reviewed-HEAD or final-gate evidence as current.
+- If final validation was interrupted, rerun the entire publish stage before pushing unless the checkpoint already records a passing final gate for the exact current SHA.
+- If the push completed but its response was lost, compare the remote SHA with local `HEAD`; do not push the same SHA again.
+- If PR creation was interrupted, inspect `PR verification attempts` first. Count 2 blocks without another lookup or increment; count 1 permits one fresh idempotent lookup/upsert; count above 2 is invalid. Then find the PR by head branch and upsert it when eligible.
+- Preserve caller-managed CI repair accounting. If a pending repair cycle's stage history already proves repair commit, fresh review, passing final gate, exact push, and verified PR update, reconcile it as completed atomically without rerunning side effects. Incomplete pending cycles resume from their actual stage.
+
+Archive a stale checkpoint only when it belongs to completed or abandoned work. Keep blocked checkpoints for recovery.
+
+## Step 3: Route one bounded stage at a time
+
+Read the checkpoint and execute the stage named by `Stage:`.
+
+Review stages are coordinated directly because ordinary stage subagents may not have access to the harness's Agent tool:
+
+- For `preflight-review`, `normal-review`, and `integration-review`, read `stages/review.md`, launch the required fresh reviewer agents yourself, then persist their reports and transition the checkpoint exactly as that file specifies.
+- Never ask a reviewer agent to launch another reviewer.
+
+All other stages use a fresh foreground `general-purpose` agent for each invocation:
+
+| Checkpoint stage | Instruction file |
+| --- | --- |
+| `prepare` | `stages/prepare.md` |
+| `preflight-fix` | `stages/fix.md` |
+| `normal-fix` | `stages/fix.md` |
+| `final-repair` | `stages/final-repair.md` |
+| `publish` | `stages/publish.md` |
+| `pr` | `stages/pr.md` |
+
+`hosted-rerun` is a caller-coordinated stage used only after hosted CI repair proves a report stale on an unchanged SHA. Ship-it does not publish or push in that stage; an autonomous caller such as AFK requests and watches the bounded hosted rerun.
+
+Every delegated stage prompt must include:
+
+- absolute working directory
+- absolute checkpoint path
+- expected stage and current `HEAD`
+- absolute instruction-file path
+- autonomous or interactive mode
+- a reminder to read repository instructions
+- a requirement to update the checkpoint before returning
+- a requirement to return the structured result defined by its stage file
+
+For fix stages, also include the exact pending finding IDs, a one-sentence summary of each, and each finding's failed-attempt count for the current review cycle. State explicitly when the fresh agent is making the second attempt. Do not merely say "read the findings and fix them." For a final repair, include the bounded failure summary and failed command. This proves the coordinator reconciled the state before delegation.
+
+After every coordinator-run review or delegated stage:
+
+1. Check actual Git status, `HEAD`, remote state when relevant, and checkpoint contents.
+2. Verify the stage performed only its assigned responsibility.
+3. Confirm checkpoint transition matches actual state.
+4. If it returned `needs-input`, interactive mode asks the user and records the answer before rerouting; autonomous mode records a blocker and stops.
+5. If a fix or verification-review stage returned `retry-needed`, verify the worktree is clean and every affected finding remains below exhaustion; the checkpoint must retain each affected finding with exactly one failed attempt. For a fix stage, also verify that failed candidate changes were reverted and successful work was committed. For a review stage, verify that `HEAD` and the worktree remained unchanged. Fetch the remote default branch before spending the second attempt:
+   - If the base advanced, atomically preserve the attempt evidence and successful commits, set `Status: active` and `Stage: prepare`, and route preparation. The prepare stage rebases, archives the invalidated review cycle, clears its active attempt state, and requires fresh review.
+   - If the base is unchanged, launch a fresh fix-stage agent for the second attempt. Never let one stage agent make both attempts.
+   - If base freshness cannot be established, atomically set `Status: blocked` and `Stage: blocked`, preserve the unresolved finding and successful commits, record the lookup failure, and stop rather than assuming the base is current.
+6. If a fix or verification-review stage returned `retry-exhausted`, verify the same clean, durable state and every affected finding's count before deciding the outcome. Exhaustion takes precedence when any affected finding has two failed attempts. Fetch the remote default branch again and compare it with the pinned base:
+   - If the base advanced, use the same prepare recovery above.
+   - If the base is unchanged, atomically set `Status: blocked` and `Stage: blocked`, preserve the unresolved worthwhile finding and successful commits, record both failed attempts, and stop.
+   - If base freshness cannot be established, use the same explicit blocked transition as above.
+7. If it reported any other blocker, set `Status: blocked` and `Stage: blocked`, preserve details, and stop. Structured blockers also record a stable kind and deterministic fingerprint so unchanged recovery attempts do not repeat automatically.
+8. If the PR stage returns `retry-needed` because a fresh postcondition lookup could not verify the PR, verify the worktree and all local/reviewed/validated/pushed SHAs still match. The PR stage owns the single durable attempt increment. Preserve Stage `pr` and launch one fresh PR-stage agent when the recorded count is 1; block when it reaches 2. Never increment again in the coordinator, and never accept command output or a printed URL as proof that the PR exists.
+9. Otherwise route the next stage from the checkpoint.
+
+Do not poll or resume a failed stage agent. Spawn a fresh stage from the durable state.
+
+## Review policy
+
+### Integration refresh
+
+A reviewed diff rebased onto an advanced default branch may use the integration-refresh path only when preparation was conflict-free and `git range-diff` proves every feature commit patch-equivalent. Preserve the complete finding ledger, adjudications, verified fixes, and review history. Record old and new base/head SHAs plus bounded patch-equivalence evidence. Invalidate reviewed-HEAD and final-gate attestations tied to the old SHA, then run one fresh integration reviewer over both the complete rebased diff and the upstream old-base-to-new-base range.
+
+A clean integration verification transfers convergence to the new HEAD and routes to publish. A semantic interaction becomes a new normal finding and routes through normal fix and verification without erasing prior history. Any conflict resolution, changed patch, ambiguous range-diff, or non-converged prior review uses full preparation invalidation and fresh preflight instead.
+
+### Preflight
+
+The preflight review keeps Standards and Spec separate. It follows the code-review skill with the remote default branch as the fixed point.
+
+- Standards checks documented repository rules and baseline design smells.
+- Spec checks caller-supplied issue or PRD behavior.
+- In autonomous mode with no spec, record `no spec available` rather than blocking.
+- In interactive mode with no discoverable spec, ask the user before beginning preflight.
+
+Preflight findings use these outcomes:
+
+- **Fixed**: valid and worth addressing.
+- **Not fixed**: valid, but the proposed change would make the result worse or is only a low-value smell.
+- **Invalid**: factually wrong or inapplicable.
+
+### Normal review
+
+Round 1 uses three fresh reviewers in parallel:
+
+- **Robustness**: bad inputs, error paths, boundary conditions, and false success gates.
+- **Test strength**: plausible regressions that existing assertions would miss.
+- **Surface accuracy**: user-facing text, docs, help, errors, and comments.
+
+Rounds 2 and later use one fresh verification reviewer. Give it the accumulated ledger and every item marked Fixed since the preceding review. It must explicitly verify those fixes. If a fix is absent or incomplete, it reports the problem under the existing finding key rather than creating a duplicate. It should not repeat resolved, invalid, or cosmetic items without new evidence. A zero-finding report is terminal only when all fixes since the previous round were explicitly verified.
+
+Every round reviews the complete branch diff against the pinned base. A prose-only fix may receive a scoped prose verification round.
+
+### Finding value bar
+
+A valid finding is worth fixing when at least one is true:
+
+1. It improves runtime behavior.
+2. It adds or tightens a test against a plausible regression.
+3. It corrects factually wrong user-facing text, documentation, or comments.
+
+Pure cleanup and readability preferences are cosmetic. Record them but do not apply them. Valid critical and important findings pass the value bar by definition; reclassify them with a reason if that sizing was wrong.
+
+Assign stable IDs by final severity: `C1`, `I1`, `M1`, and `N1`. Preserve round, original severity, final severity, outcome, and reason.
+
+Fix stages process at most three pending findings per invocation. After a fix batch, run targeted checks plus the normal full check and commit locally. Never push. A later fresh review verifies the resulting complete diff.
+
+A fix-stage agent may record at most one failed implementation attempt for a finding. Before counting an attempt as failed, it must diagnose every failing targeted assertion. When the finding intentionally corrects behavior that a test encodes, the old assertion may be stale; update it only after verifying the corrected contract, then add or tighten coverage for that contract. A red assertion for the intentionally replaced behavior does not by itself make the fix attempt fail.
+
+Stop and report a blocker before normal round 7. After two failed attempts to resolve the same finding, use the coordinator's retry-exhaustion base-freshness check above. Only an unchanged base turns retry exhaustion into a blocker. Do not silently waive an unresolved worthwhile finding.
+
+When a required deterministic proof cannot be observed because the configured harness lacks the necessary capability, and production changes, cache manipulation, timing changes, retries, or weaker assertions would not create valid evidence, classify `evidence-unavailable`. Record the exact evidence, bounded approaches ruled out, and a fingerprint derived from the gate, check, environment, and missing capability. This is not a failed implementation attempt or ordinary repair round. It blocks unchanged automatic reruns until the capability or valid evidence method changes.
+
+## Final validation and publication
+
+The publish stage may proceed only when:
+
+- the worktree is clean
+- the checkpoint has no unresolved worthwhile findings
+- review converged at the current `HEAD`
+- the pinned default-branch base has not advanced
+
+If the default branch advanced, return to `prepare` without overwriting the pinned reviewed base/head. Preserve convergence and the ledger as candidate evidence and record the newly observed base separately. Preparation rebases and chooses patch-equivalent integration verification or full review invalidation. If final validation fails, record a bounded failure summary and route to `final-repair`. Any repair commit requires a fresh normal review before another publish attempt.
+
+On the successful path, run the complete CI-equivalent suite once against the exact reviewed commit. Fetch and recheck the pinned default branch immediately after the suite, then push without intervening file changes only if the base is still current. A remote branch already at local `HEAD` may skip the push, but it may skip the final gate only when the checkpoint records that exact SHA as successfully validated.
+
+A force-with-lease push is standing-authorized for any branch other than the remote default branch. This authorization applies in interactive and autonomous mode and does not require separate user confirmation. Before rewriting a published non-default branch, fetch it, record its exact old remote SHA in the checkpoint, and later use `--force-with-lease` against that exact SHA. Never force-push the remote default branch. In repair mode, preserve previous review and publication history, review the repair cycle, rerun the final gate, and make only the final repair push. In integration-refresh mode, preserve the completed PR identity and all prior evidence, then use preparation's patch-equivalence decision before rerunning the required review and final gate.
+
+After the push, the PR stage creates or updates the PR idempotently. The title follows repository conventions. The body includes any required prefix, `## Summary`, and `## Test plan`. Never post review comments.
+
+## Completion and report
+
+Publication completion has two distinct terminal outcomes:
+
+- `complete-with-pr`: requires a freshly verified PR whose head branch and head SHA match the expected pushed branch and SHA, with its URL recorded.
+- `nothing-to-ship`: requires an empty diff and no PR publication claim.
+
+No other outcome may set `Status: complete` or `Stage: complete`. Command success, a printed URL, or a remote branch alone is not a completion postcondition.
+
+Build the final response from the checkpoint:
+
+1. PR URL.
+2. Separate Standards and Spec preflight results, including every outcome and reason.
+3. Number of normal rounds and fixes per round.
+4. Every normal finding grouped by final severity and labeled with round and stable ID.
+5. Targeted, full-check, and final CI-equivalent validation outcomes.
+6. Push and PR outcome.
+
+Nothing is hidden, including invalid and cosmetic findings.
+
+Set `Status: complete` before reporting. After the report is safely delivered, remove the checkpoint and its lock. If delivery is interrupted, the complete checkpoint lets the same coordinator session reproduce the report and then remove both. An autonomous caller such as AFK may retain the completed checkpoint and lock through its downstream CI and merge loop, then remove them after its own final report.
 
 ## Edge cases
 
-- **Empty diff**: If there is no diff between `origin/master` and `HEAD`, there is nothing to review or ship. If the branch is already pushed with a PR, report its current state. Otherwise report that the branch has no changes to ship.
-- **Worktree**: This works from worktrees too. The branch is already non-master in a worktree, so step 2 is a no-op.
-- **Multiple commits on the branch**: The PR title should summarize the overall change across all commits, not just the latest one. For a single commit, use its message directly if it already follows the format.
+- **Empty diff**: if no diff exists against the remote default branch, verify and report an existing PR if present; otherwise set the distinct `nothing-to-ship` outcome. Never represent it as `complete-with-pr`.
+- **Detached HEAD**: stop before preparation.
+- **Worktree**: the absolute Git directory keeps checkpoints isolated per worktree.
+- **Existing remote branch**: a non-default branch may be rewritten with force-with-lease against its recorded exact old remote SHA. Never force-push the remote default branch.
+- **Existing PR**: update it only after the final reviewed SHA is pushed.
+- **External edits during a stage**: stop and reconcile before continuing.
+- **Base advances after convergence**: preparation may preserve review evidence only through the patch-equivalent integration-refresh path; otherwise it requires fresh preflight and normal review.
+- **Base advances during review fixes**: every failed attempt triggers a coordinator base-freshness check. A current base gets at most one fresh-agent retry; an advanced base routes to preparation before another attempt or blocker.
+- **Concurrent invocation**: if another active coordinator appears to own the same checkpoint, stop rather than race it.
+- **No Notion tasks**: never create one unless the user explicitly requests it.

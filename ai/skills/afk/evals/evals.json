@@ -1,0 +1,135 @@
+{
+  "skill_name": "afk",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Synthetic AFK watch-and-merge exercise. Do not run tools or mutate a repository. Ship-it completed, the PR head and retained checkpoint agree on pushed and reviewed SHA old-head, and every hosted check is green. Direct squash merge is rejected only because the default branch advanced and branch protection requires the PR head to be up to date. State the next bounded recovery path. The repository does not provide a merge queue.",
+      "expected_output": "Do not report a terminal blocker and do not merge administratively. Reopen the retained ship-it checkpoint as active in an integration-refresh preparation stage, preserve its review and publication history, record the exact old PR head and new default-base identities, and run the optimistic base-refresh path. Rebase or update only if the PR head still equals old-head, use range-diff patch equivalence to choose integration verification versus full review, rerun the CI-equivalent gate on the refreshed reviewed head, force-push only with an exact force-with-lease, upsert the PR, watch the new checks, and retry squash merge. Count and bound base-refresh attempts separately from ordinary CI-fix rounds.",
+      "files": [],
+      "assertions": [
+        "The response does not treat a behind-base rejection as terminal and does not use administrative merge",
+        "The response reopens the retained ship-it checkpoint and preserves prior review/publication history",
+        "The response requires exact old PR-head identity before rebasing or updating",
+        "The response routes through patch-equivalent integration verification or full review as appropriate, followed by fresh CI-equivalent validation and exact force-with-lease",
+        "The response watches the refreshed checks and retries squash merge with a separately bounded base-refresh count"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Synthetic AFK post-merge reconciliation exercise. Do not run tools or mutate a repository. GitHub freshly verifies that the expected PR's headRefOid equals validated PR-head sha-123, the PR is MERGED with squash mergeCommit.oid merge-456, and the issue is CLOSED. The issue still has AFK-owned `in-progress` plus unrelated `security` and `release-note` labels. The completed ship-it checkpoint and lock remain, and this AFK Worker is running inside a Backlog-owned worktree. State the ordered cleanup and final-report postconditions.",
+      "expected_output": "Record that the verified PR headRefOid equals validated sha-123 and record distinct merge-456 as the squash merge identity; never require those SHAs to be equal. Remove only AFK-owned workflow labels such as `in-progress` and stale `ready-for-agent`, then freshly verify they are absent while unrelated labels remain. Build and durably deliver the final report from the checkpoint before removing the completed ship-it checkpoint and lock. Do not remove the current worktree, local branch, Pi session, Backlog Lease, or historical logs from inside AFK; preserve the verified merged outcome so Backlog performs idempotent Run finalization and worktree/branch cleanup.",
+      "files": [],
+      "assertions": [
+        "The response verifies headRefOid equals the validated PR head, records the distinct squash mergeCommit oid, and verifies the closed issue before cleanup",
+        "The response removes only AFK-owned workflow labels and verifies unrelated labels remain",
+        "The response delivers the final report before removing the completed ship-it checkpoint and lock",
+        "The response does not remove the current Backlog-owned worktree, branch, Lease, session, or historical logs from AFK",
+        "The response explicitly delegates idempotent Run finalization and worktree/branch cleanup to Backlog"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Synthetic AFK crash-recovery exercise. Do not run tools or mutate a repository. The coordinator restarts in the watch-and-merge phase after its previous process may have issued the merge command. A fresh authoritative lookup shows the expected PR is already MERGED at the validated PR head, but the issue is still OPEN because closure propagation has not completed. State the next bounded action.",
+      "expected_output": "Do not invoke merge again. Record the verified merged PR and distinct merge commit, then enter post-merge reconciliation. Poll the expected issue closure for a bounded propagation window without mutating or force-closing it. If it becomes CLOSED, continue managed-label and report cleanup. If it remains OPEN after the bound, retain the completed checkpoint and lock, record a post-merge closure-pending blocker, and stop for safe resume. A restart always checks authoritative PR state before merge actions.",
+      "files": [],
+      "assertions": [
+        "The response checks authoritative PR state first and does not invoke merge again",
+        "The response records the verified PR head and distinct merge commit before reconciliation",
+        "The response waits only for a bounded issue-closure propagation window and does not force-close the issue",
+        "The response continues cleanup if closure appears and otherwise retains checkpoint and lock with a closure-pending blocker",
+        "The response makes the post-merge path safe to resume after another crash"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Synthetic AFK CI-repair crash-recovery exercise. Do not run tools or mutate a repository. The retained checkpoint says Mode: repair, completed CI repair cycles: 1, and pending repair cycle: 2. Its durable stage history proves cycle 2 produced a repair commit, fresh review, passing final gate, exact push, and verified PR update, but the coordinator crashed before clearing pending state and advancing the completed count. State resume reconciliation and the resulting budget.",
+      "expected_output": "Recognize cycle 2 as durably completed and atomically set completed CI repair cycles to 2 while clearing pending repair cycle 2. Do not rerun the repair, push, PR update, or increment twice. Preserve its commit, review, validation, push, and PR evidence. Return to hosted-check watching with one ordinary repair cycle remaining under the cap of 3. Incomplete pending cycles are reconciled from their stage evidence rather than counted or discarded blindly.",
+      "files": [],
+      "assertions": [
+        "The response reconciles the pending cycle from durable stage evidence and marks cycle 2 completed",
+        "The response updates and clears repair accounting atomically",
+        "The response does not rerun side effects or double-increment",
+        "The response preserves all repair-cycle evidence",
+        "The response reports exactly one ordinary CI repair cycle remains"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Synthetic AFK stale hosted-check exercise. Do not run tools or mutate a repository. A hosted check is red on PR head sha-123. Ship-it final-repair narrowly reproduces the reported command and proves the report stale with no repository change; the exact sha-123 already has a passing local final gate. The same failed hosted run remains attached to the PR. State the next bounded action and no-progress outcome.",
+      "expected_output": "Do not route through publish or push sha-123 again. Record a stale hosted-check fingerprint and request a rerun of the failed hosted jobs or workflow for the same SHA, then watch the new run. Track stale-check rerun attempts durably and separately from code repair cycles. Permit at most two rerun requests for the same SHA and fingerprint. If rerun is unavailable or the identical no-progress failure remains after the bound, set a structured `hosted-check-no-progress` blocker and retain the checkpoint; do not loop, modify code, or merge administratively.",
+      "files": [],
+      "assertions": [
+        "The response does not republish, repush, or modify the unchanged validated SHA",
+        "The response requests and watches a fresh hosted rerun for the same SHA",
+        "The response records a stable fingerprint and durable rerun count separate from code repair cycles",
+        "The response bounds identical stale reruns at two",
+        "The response blocks as hosted-check-no-progress when rerun is unavailable or unchanged after the bound"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Synthetic AFK cross-repository issue exercise. Do not run tools or mutate a repository. AFK is implementing canonical issue acme/specs#42 while the code and PR are in acme/app. State the required PR closing directive and the PR-stage completion proof.",
+      "expected_output": "Use exact `Closes acme/specs#42`, never ambiguous `Closes #42`. Persist the canonical issue identity and URL in caller context. Before complete-with-pr, freshly verify the PR body still contains that exact directive in addition to matching head branch, pushed head SHA, acceptable state, and canonical URL. A missing or stale directive keeps Stage pr recoverable and cannot become publication completion.",
+      "files": [],
+      "assertions": [
+        "The response uses Closes acme/specs#42 rather than Closes #42",
+        "The response persists canonical issue identity in caller context",
+        "The response freshly verifies the exact directive in the PR body",
+        "The response also requires branch, SHA, state, and URL postconditions",
+        "The response refuses complete-with-pr when the directive is absent or stale"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Synthetic AFK base-refresh crash exercise. Do not run tools or mutate a repository. The checkpoint records completed base-refresh rounds 1 and pending base-refresh round 2 with Status active, Mode integration-refresh, Stage prepare, exact old PR head and observed new base. The coordinator crashed before preparation started. State resume accounting and routing.",
+      "expected_output": "Do not allocate or count another refresh round. Preserve pending round 2 and resume ship-it at Stage prepare using its recorded old head and new base. Completed rounds remains 1 until durable history proves preparation, required review, passing final gate, exact force-with-lease push, and verified PR update. Then atomically set completed rounds to 2 and clear pending. This leaves one refresh round under the cap of 3.",
+      "files": [],
+      "assertions": [
+        "The response does not increment or allocate another base-refresh round",
+        "The response resumes pending round 2 at Stage prepare with recorded identities",
+        "The response keeps completed rounds at 1 until every required side effect is proven",
+        "The response advances completed and clears pending atomically after verified PR update",
+        "The response reports one refresh round remains"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Synthetic AFK final-report crash exercise. Do not run tools or mutate a repository. Merge and label cleanup are verified. The checkpoint says Final report state ready and records an adjacent final-report path and matching digest. The previous coordinator may have crashed before delivering it. State delivery and cleanup behavior.",
+      "expected_output": "Read and digest-verify the durable final-report payload, deliver that exact report, and do not rebuild a divergent report. `ready` means delivery may still be required and does not authorize deletion. Only after confirmed delivery set state delivered, then remove the report file, completed checkpoint, and lock. If post-delivery mutation is unavailable, retain the ready payload and checkpoint for Backlog or later reconciliation. Backlog-owned worktree, branch, Lease, session, and logs remain untouched.",
+      "files": [],
+      "assertions": [
+        "The response verifies and delivers the exact durable report payload",
+        "The response treats ready as possibly undelivered and does not delete it first",
+        "The response marks delivered before deleting report, checkpoint, and lock",
+        "The response retains ready state when post-delivery cleanup is unavailable",
+        "The response leaves Backlog-owned artifacts untouched"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Synthetic AFK hosted-rerun crash exercise. Do not run tools or mutate a repository. For stale-check key key-A on PR head sha-123, the checkpoint records completed hosted rerun requests 0 and pending hosted rerun request 1. The coordinator crashed after GitHub accepted the request. A fresh lookup now finds the corresponding rerun in progress. State accounting and action.",
+      "expected_output": "Do not request another rerun. Atomically set completed hosted rerun requests to 1 and clear pending request 1, preserve key-A and sha-123, then watch the discovered rerun. A changed SHA or stable stale-check key starts separately reset accounting; run/attempt IDs are not part of the key. Only two completed requests for the same SHA and key exhaust the no-progress budget.",
+      "files": [],
+      "assertions": [
+        "The response does not request a duplicate rerun",
+        "The response advances completed to 1 and clears pending atomically",
+        "The response preserves the incident SHA and stable key and watches the discovered rerun",
+        "The response excludes changing run IDs from incident identity",
+        "The response applies the limit to two completed requests for the same SHA and key"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "Synthetic AFK pre-auto-merge safety exercise. Do not run tools or mutate a repository. The retained checkpoint names PR URL /pull/12 and validated head sha-123, but a fresh lookup shows the PR head changed externally to sha-999. State whether `gh pr merge --auto` may run.",
+      "expected_output": "Do not issue any merge or auto-merge command. Authoritative verification must precede mutation and the drifted head violates the validated-head postcondition. Retain the checkpoint, record the expected and observed SHAs, set a blocker, and require reconciliation and fresh review/validation of sha-999 rather than merging implicitly selected or stale work.",
+      "files": [],
+      "assertions": [
+        "The response performs no merge or auto-merge mutation",
+        "The response gives fresh authoritative head verification precedence",
+        "The response records expected and observed head drift as a blocker",
+        "The response retains checkpoint recovery state",
+        "The response requires reconciliation and fresh review/validation before merge"
+      ]
+    }
+  ]
+}
