@@ -66,6 +66,46 @@ link_directory_entries() {
   done
 }
 
+migrate_skill_entries() {
+  local source_directory=$1
+  local entry
+  local destination
+  local temporary
+  local candidate
+
+  if [ ! -d "$source_directory" ]; then
+    return
+  fi
+
+  for entry in "$source_directory"/*; do
+    destination="$AI_DIR/skills/$(basename "$entry")"
+
+    if [ -e "$destination" ] || [ -L "$destination" ]; then
+      continue
+    fi
+
+    if [ -L "$entry" ] && [ ! -e "$entry" ]; then
+      continue
+    fi
+
+    temporary=$(mktemp -d "$AI_DIR/skills/.skill-migration.XXXXXX")
+    candidate="$temporary/$(basename "$entry")"
+    echo "Importing locally installed skill $(basename "$entry")..."
+
+    if ! cp -RH "$entry" "$candidate"; then
+      rm -rf "$temporary"
+      return 1
+    fi
+
+    if ! mv "$candidate" "$destination"; then
+      rm -rf "$temporary"
+      return 1
+    fi
+
+    rmdir "$temporary"
+  done
+}
+
 copy_if_missing() {
   local source=$1
   local destination=$2
@@ -201,9 +241,12 @@ echo "Setting up AI tools..."
 link_path "$AI_DIR/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
 link_path "$AI_DIR/CLAUDE.md" "$HOME/AGENTS.md"
 
-# Shared skills are canonical in this repository and linked into both locations.
-link_directory_entries "$AI_DIR/skills" "$HOME/.agents/skills"
-link_directory_entries "$AI_DIR/skills" "$HOME/.claude/skills"
+# Shared skills are canonical in this repository. Import skills from the old
+# per-entry layout before linking the whole directory into both agent locations.
+migrate_skill_entries "$HOME/.agents/skills"
+migrate_skill_entries "$HOME/.claude/skills"
+link_path "$AI_DIR/skills" "$HOME/.agents/skills"
+link_path "$AI_DIR/skills" "$HOME/.claude/skills"
 
 # Claude Code configuration that is safe to share.
 link_path "$AI_DIR/claude/settings.json" "$HOME/.claude/settings.json"
