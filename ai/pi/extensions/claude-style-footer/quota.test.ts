@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { formatQuotaUsage, formatTimeUntilReset, parseRemainingQuotas } from "./quota.ts";
+import {
+  aggregateRemainingQuotas,
+  formatQuotaUsage,
+  formatTimeUntilReset,
+  loadOpenAiCodexQuotas,
+  parseRemainingQuotas,
+} from "./quota.ts";
 
 test("parses remaining and used percentages from named windows", () => {
   assert.deepEqual(
@@ -115,6 +121,233 @@ test("parses legacy data limits by unit", () => {
       weeklyResetAt: 1_700_600_000_000,
     },
   );
+});
+
+test("shows the most constrained account and its reset per window", () => {
+  assert.deepEqual(
+    aggregateRemainingQuotas([
+      {
+        fiveHour: 100,
+        fiveHourResetAt: 1_700_018_000_000,
+        weekly: 80,
+        weeklyResetAt: 1_700_604_800_000,
+      },
+      {
+        fiveHour: 40,
+        fiveHourResetAt: 1_700_009_000_000,
+        weekly: 20,
+        weeklyResetAt: 1_700_302_400_000,
+      },
+    ]),
+    {
+      fiveHour: 40,
+      fiveHourResetAt: 1_700_009_000_000,
+      weekly: 20,
+      weeklyResetAt: 1_700_302_400_000,
+      accountMinimum: true,
+    },
+  );
+});
+
+test("leaves an account-minimum window unknown when any account omits it", () => {
+  assert.deepEqual(
+    aggregateRemainingQuotas([
+      { fiveHour: 100, fiveHourResetAt: 1_700_018_000_000 },
+      { weekly: 40, weeklyResetAt: 1_700_604_800_000 },
+    ]),
+    { accountMinimum: true },
+  );
+  assert.deepEqual(aggregateRemainingQuotas([]), {});
+});
+
+test("keeps a constrained percentage when its reset is unknown", () => {
+  assert.deepEqual(
+    aggregateRemainingQuotas([
+      { fiveHour: 40 },
+      { fiveHour: 80, fiveHourResetAt: 1_700_018_000_000 },
+    ]),
+    { fiveHour: 40, accountMinimum: true },
+  );
+});
+
+test("rejects an invalid enabled CPA credential", async () => {
+  const { mkdtemp, rm, writeFile } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const previousAccountsDir = process.env.CLIPROXYAPI_AUTH_DIR;
+  const previousFetch = globalThis.fetch;
+  const directory = await mkdtemp(join(tmpdir(), "claude-style-footer-"));
+  process.env.CLIPROXYAPI_AUTH_DIR = directory;
+  await Promise.all([
+    writeFile(join(directory, "healthy.json"), JSON.stringify({ type: "codex", access_token: "healthy", account_id: "one" })),
+    writeFile(join(directory, "invalid.json"), JSON.stringify({ type: "codex", access_token: "missing-account" })),
+  ]);
+  globalThis.fetch = async () => new Response("should not fetch", { status: 500 });
+
+  try {
+    await assert.rejects(
+      loadOpenAiCodexQuotas({ model: { provider: "cpa" } } as never),
+      /complete CPA credential set/,
+    );
+  } finally {
+    globalThis.fetch = previousFetch;
+    await rm(directory, { recursive: true, force: true });
+    if (previousAccountsDir === undefined) delete process.env.CLIPROXYAPI_AUTH_DIR;
+    else process.env.CLIPROXYAPI_AUTH_DIR = previousAccountsDir;
+  }
+});
+
+test("rejects malformed JSON in the CPA credential directory", async () => {
+  const { mkdtemp, rm, writeFile } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const previousAccountsDir = process.env.CLIPROXYAPI_AUTH_DIR;
+  const directory = await mkdtemp(join(tmpdir(), "claude-style-footer-"));
+  process.env.CLIPROXYAPI_AUTH_DIR = directory;
+  await writeFile(join(directory, "malformed.json"), "{not-json");
+
+  try {
+    await assert.rejects(
+      loadOpenAiCodexQuotas({ model: { provider: "cpa" } } as never),
+      /complete CPA credential set/,
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+    if (previousAccountsDir === undefined) delete process.env.CLIPROXYAPI_AUTH_DIR;
+    else process.env.CLIPROXYAPI_AUTH_DIR = previousAccountsDir;
+  }
+});
+
+test("rejects an existing CPA credential directory without enabled Codex accounts", async () => {
+  const { mkdtemp, rm, writeFile } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const previousAccountsDir = process.env.CLIPROXYAPI_AUTH_DIR;
+  const directory = await mkdtemp(join(tmpdir(), "claude-style-footer-"));
+  process.env.CLIPROXYAPI_AUTH_DIR = directory;
+  await writeFile(join(directory, "disabled.json"), JSON.stringify({ type: "codex", disabled: true }));
+
+  try {
+    await assert.rejects(
+      loadOpenAiCodexQuotas({ model: { provider: "cpa" } } as never),
+      /complete CPA credential set/,
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+    if (previousAccountsDir === undefined) delete process.env.CLIPROXYAPI_AUTH_DIR;
+    else process.env.CLIPROXYAPI_AUTH_DIR = previousAccountsDir;
+  }
+});
+
+test("rejects a configured CPA credential path that is not a directory", async () => {
+  const { mkdtemp, rm, writeFile } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const previousAccountsDir = process.env.CLIPROXYAPI_AUTH_DIR;
+  const directory = await mkdtemp(join(tmpdir(), "claude-style-footer-"));
+  const file = join(directory, "accounts");
+  process.env.CLIPROXYAPI_AUTH_DIR = file;
+  await writeFile(file, "not-a-directory");
+
+  try {
+    await assert.rejects(
+      loadOpenAiCodexQuotas({ model: { provider: "cpa" } } as never),
+      /complete CPA credential set/,
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+    if (previousAccountsDir === undefined) delete process.env.CLIPROXYAPI_AUTH_DIR;
+    else process.env.CLIPROXYAPI_AUTH_DIR = previousAccountsDir;
+  }
+});
+
+test("rejects an incomplete CPA pool snapshot", async () => {
+  const { mkdtemp, rm, writeFile } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const previousAccountsDir = process.env.CLIPROXYAPI_AUTH_DIR;
+  const previousFetch = globalThis.fetch;
+  const directory = await mkdtemp(join(tmpdir(), "claude-style-footer-"));
+  process.env.CLIPROXYAPI_AUTH_DIR = directory;
+  await Promise.all([
+    writeFile(join(directory, "healthy.json"), JSON.stringify({ type: "codex", access_token: "healthy", account_id: "one" })),
+    writeFile(join(directory, "expired.json"), JSON.stringify({ type: "codex", access_token: "expired", account_id: "two" })),
+  ]);
+
+  globalThis.fetch = async (_input, init) => {
+    const authorization = new Headers(init?.headers).get("authorization");
+    if (authorization === "Bearer expired") return new Response("expired", { status: 401 });
+    return new Response(JSON.stringify({ rate_limit: { five_hour_limit: { used_percent: 25 } } }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  };
+
+  try {
+    await assert.rejects(
+      loadOpenAiCodexQuotas({ model: { provider: "cpa" } } as never),
+      /complete CPA quota snapshot/,
+    );
+  } finally {
+    globalThis.fetch = previousFetch;
+    await rm(directory, { recursive: true, force: true });
+    if (previousAccountsDir === undefined) delete process.env.CLIPROXYAPI_AUTH_DIR;
+    else process.env.CLIPROXYAPI_AUTH_DIR = previousAccountsDir;
+  }
+});
+
+test("falls back to Pi Codex auth when CPA is not configured", async () => {
+  const previousAccountsDir = process.env.CLIPROXYAPI_AUTH_DIR;
+  const previousFetch = globalThis.fetch;
+  process.env.CLIPROXYAPI_AUTH_DIR = `/tmp/claude-style-footer-missing-${process.pid}-${Date.now()}`;
+
+  let requestedAuthorization: string | null = null;
+  globalThis.fetch = async (_input, init) => {
+    requestedAuthorization = new Headers(init?.headers).get("authorization");
+    return new Response(
+      JSON.stringify({
+        rate_limit: {
+          primary_window: {
+            used_percent: 25,
+            limit_window_seconds: 18_000,
+            reset_at: 1_700_018_000,
+          },
+          secondary_window: {
+            used_percent: 40,
+            limit_window_seconds: 604_800,
+            reset_at: 1_700_604_800,
+          },
+        },
+      }),
+      { status: 200, headers: { "content-type": "application/json" } },
+    );
+  };
+
+  try {
+    const quotas = await loadOpenAiCodexQuotas({
+      model: { provider: "cpa" },
+      modelRegistry: {
+        getAvailable: () => [{ provider: "openai-codex" }],
+        getApiKeyAndHeaders: async () => ({
+          ok: true,
+          apiKey: "pi-codex-token",
+          headers: { "chatgpt-account-id": "pi-account" },
+        }),
+      },
+    } as never);
+
+    assert.equal(requestedAuthorization, "Bearer pi-codex-token");
+    assert.deepEqual(quotas, {
+      fiveHour: 75,
+      fiveHourResetAt: 1_700_018_000_000,
+      weekly: 60,
+      weeklyResetAt: 1_700_604_800_000,
+    });
+  } finally {
+    globalThis.fetch = previousFetch;
+    if (previousAccountsDir === undefined) delete process.env.CLIPROXYAPI_AUTH_DIR;
+    else process.env.CLIPROXYAPI_AUTH_DIR = previousAccountsDir;
+  }
 });
 
 test("formats compact reset countdowns", () => {

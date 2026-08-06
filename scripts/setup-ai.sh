@@ -162,6 +162,7 @@ preflight_sources() {
     "$AI_DIR/claude/commands/squash-merge-worktree.md" \
     "$AI_DIR/pi/AGENTS.md" \
     "$AI_DIR/pi/settings.json" \
+    "$AI_DIR/pi/models.json" \
     "$AI_DIR/pi/keybindings.json" \
     "$AI_DIR/pi/themes/robin-iterm.json" \
     "$AI_DIR/pi/extensions/claude-style-footer/index.ts" \
@@ -182,6 +183,7 @@ preflight_sources() {
 
   validate_single_json_object "$AI_DIR/claude/settings.json"
   validate_single_json_object "$AI_DIR/pi/settings.json"
+  validate_single_json_object "$AI_DIR/pi/models.json"
   validate_single_json_object "$AI_DIR/pi/keybindings.json"
 
   for path in "$AI_DIR/pi/themes"/*.json; do
@@ -233,6 +235,7 @@ merge_json_settings() {
 
 preflight_sources
 preflight_json_settings "$AI_DIR/pi/settings.json" "$HOME/.pi/agent/settings.json"
+preflight_json_settings "$AI_DIR/pi/models.json" "$HOME/.pi/agent/models.json"
 
 echo
 echo "Setting up AI tools..."
@@ -256,6 +259,7 @@ link_directory_entries "$AI_DIR/claude/commands" "$HOME/.claude/commands"
 # Pi configuration. Authentication, sessions, trust, and installed package caches stay local.
 link_path "$AI_DIR/pi/AGENTS.md" "$HOME/.pi/agent/AGENTS.md"
 merge_json_settings "$AI_DIR/pi/settings.json" "$HOME/.pi/agent/settings.json"
+merge_json_settings "$AI_DIR/pi/models.json" "$HOME/.pi/agent/models.json"
 link_path "$AI_DIR/pi/keybindings.json" "$HOME/.pi/agent/keybindings.json"
 link_path "$AI_DIR/pi/extensions" "$HOME/.pi/agent/extensions"
 link_directory_entries "$AI_DIR/pi/themes" "$HOME/.pi/agent/themes"

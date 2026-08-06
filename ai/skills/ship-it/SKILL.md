@@ -13,7 +13,7 @@ Read the repository instructions and inspect the branch, working tree, remotes, 
 
 Confirm that the intended changes have been reviewed and that the appropriate local checks pass. If the work has not been reviewed, or it changed materially after review, use the code-review skill and resolve every valid finding before publishing.
 
-Do not discard unrelated work. Put the intended changes on a feature branch and commit them if needed. Never push directly to the default branch. Follow repository conventions for commits, branches, pull requests, and issue references.
+Do not discard unrelated work. Put the intended changes on a feature branch and commit them if needed. If you're already on a non-default branch, you can use that. Never push directly to the default branch. Follow repository conventions for commits, branches, pull requests, and issue references.
 
 ## Publish
 

@@ -63,6 +63,7 @@ test_migration_and_idempotence() {
     "$home/.agents/skills/local-agent-skill" \
     "$home/.claude/skills/local-claude-skill"
   printf '{"lastChangelogVersion":"9.9.9","theme":"old","machineOnly":true}\n' > "$home/.pi/agent/settings.json"
+  printf '{"providers":{"cpa":{"modelOverrides":{"other-model":{"contextWindow":128000}}}},"machineOnly":true}\n' > "$home/.pi/agent/models.json"
   printf 'local extension\n' > "$home/.pi/agent/extensions/local-only/index.ts"
   printf 'agent skill\n' > "$home/.agents/skills/local-agent-skill/SKILL.md"
   printf 'claude skill\n' > "$home/.claude/skills/local-claude-skill/SKILL.md"
@@ -89,6 +90,9 @@ test_migration_and_idempotence() {
   [ "$(jq -r .lastChangelogVersion "$home/.pi/agent/settings.json")" = "9.9.9" ]
   [ "$(jq -r .theme "$home/.pi/agent/settings.json")" = "robin-iterm" ]
   [ "$(jq -r .machineOnly "$home/.pi/agent/settings.json")" = "true" ]
+  [ "$(jq -r '.providers.cpa.modelOverrides["gpt-5.6-sol"].contextWindow' "$home/.pi/agent/models.json")" = "272000" ]
+  [ "$(jq -r '.providers.cpa.modelOverrides["other-model"].contextWindow' "$home/.pi/agent/models.json")" = "128000" ]
+  [ "$(jq -r .machineOnly "$home/.pi/agent/models.json")" = "true" ]
   [ ! -e "$home/.codex/skills" ]
   [ ! -e "$home/.codex/rules" ]
 
