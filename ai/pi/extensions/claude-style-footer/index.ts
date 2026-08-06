@@ -2,6 +2,7 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 import { truncateToWidth } from "@earendil-works/pi-tui";
 import { basename } from "node:path";
 
+import { calculateSessionCost, formatSessionCost } from "./cost.ts";
 import {
   formatQuotaUsage,
   loadOpenAiCodexQuotas,
@@ -10,7 +11,7 @@ import {
 
 const GIT_REFRESH_MS = 10_000;
 const PULL_REQUEST_REFRESH_MS = 60_000;
-const QUOTA_REFRESH_MS = 5 * 60_000;
+const QUOTA_REFRESH_MS = 60_000;
 const RUNTIME_ENTRY_TYPE = "claude-style-footer:agent-runtime";
 
 interface GitChanges {
@@ -34,10 +35,6 @@ function formatTokens(tokens: number): string {
   return `${Math.floor(tokens / 1_000)}k`;
 }
 
-function shortModelName(name: string): string {
-  return name.replace(/^Claude\s+/i, "");
-}
-
 function formatAgentRuntime(milliseconds: number): string {
   const totalSeconds = Math.floor(milliseconds / 1_000);
   const hours = Math.floor(totalSeconds / 3_600);
@@ -58,35 +55,6 @@ async function resolveProjectName(pi: ExtensionAPI, cwd: string): Promise<string
     .find((line) => line.startsWith("worktree "))
     ?.slice("worktree ".length);
   return basename(mainWorktree || cwd);
-}
-
-function usageCost(usage: unknown): number {
-  if (!usage || typeof usage !== "object") return 0;
-  const total = (usage as { cost?: { total?: unknown } }).cost?.total;
-  return typeof total === "number" && Number.isFinite(total) ? total : 0;
-}
-
-export function calculateSessionCost(ctx: ExtensionContext): number {
-  let cost = 0;
-
-  for (const entry of ctx.sessionManager.getEntries()) {
-    const usageEntry = entry as {
-      type: string;
-      message?: { role?: string; usage?: unknown };
-      usage?: unknown;
-    };
-
-    if (
-      usageEntry.type === "message" &&
-      (usageEntry.message?.role === "assistant" || usageEntry.message?.role === "toolResult")
-    ) {
-      cost += usageCost(usageEntry.message.usage);
-    } else if (usageEntry.type === "compaction" || usageEntry.type === "branch_summary") {
-      cost += usageCost(usageEntry.usage);
-    }
-  }
-
-  return cost;
 }
 
 interface AgentRuntime {
@@ -242,7 +210,11 @@ export default function (pi: ExtensionAPI) {
       };
 
       const refreshQuota = async () => {
-        quotas = await loadOpenAiCodexQuotas(ctx).catch(() => ({}));
+        try {
+          quotas = await loadOpenAiCodexQuotas(ctx);
+        } catch {
+          quotas = {};
+        }
         requestRender();
       };
 
@@ -273,9 +245,9 @@ export default function (pi: ExtensionAPI) {
         },
         invalidate() {},
         render(width: number): string[] {
-          const modelName = shortModelName(ctx.model?.name ?? ctx.model?.id ?? "no model");
+          const modelSlug = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : "no model";
           const thinking = pi.getThinkingLevel();
-          const model = thinking === "off" ? modelName : `${modelName} (${thinking})`;
+          const model = thinking === "off" ? modelSlug : `${modelSlug} (${thinking})`;
 
           const usage = ctx.getContextUsage();
           const contextWindow = usage?.contextWindow ?? ctx.model?.contextWindow;
@@ -309,7 +281,8 @@ export default function (pi: ExtensionAPI) {
           const sessionCost = calculateSessionCost(ctx);
           const fiveHourUsage = formatQuotaUsage("5h", quotas.fiveHour, quotas.fiveHourResetAt);
           const weeklyUsage = formatQuotaUsage("week", quotas.weekly, quotas.weeklyResetAt);
-          const quota = `${fiveHourUsage} ${weeklyUsage} left`;
+          const quotaLabel = quotas.accountMinimum ? "lowest acct" : "left";
+          const quota = `${fiveHourUsage} ${weeklyUsage} ${quotaLabel}`;
 
           const segments = [
             theme.fg("error", model),
@@ -318,7 +291,7 @@ export default function (pi: ExtensionAPI) {
             branch,
             theme.fg("mdCode", projectName),
             theme.fg("syntaxFunction", agentRuntime),
-            theme.fg("dim", `$${sessionCost.toFixed(3)} · ${quota}`),
+            theme.fg("dim", `${formatSessionCost(sessionCost)} · ${quota}`),
           ];
 
           const extensionStatuses = [...footerData.getExtensionStatuses().values()].filter(Boolean);
@@ -326,7 +299,7 @@ export default function (pi: ExtensionAPI) {
             segments.push(theme.fg("syntaxNumber", extensionStatuses.join(", ")));
           }
 
-          return [truncateToWidth(segments.join(theme.fg("dim", " | ")), width)];
+          return [truncateToWidth(` ${segments.join(theme.fg("dim", " | "))}`, width)];
         },
       };
     });

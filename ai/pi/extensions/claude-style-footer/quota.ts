@@ -1,4 +1,7 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { readdir, readFile } from "node:fs/promises";
+import { homedir } from "node:os";
+import { join, resolve } from "node:path";
 
 const CODEX_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage";
 const CODEX_TIMEOUT_MS = 20_000;
@@ -10,6 +13,7 @@ export interface RemainingQuotas {
   fiveHourResetAt?: number;
   weekly?: number;
   weeklyResetAt?: number;
+  accountMinimum?: boolean;
 }
 
 type UnknownRecord = Record<string, unknown>;
@@ -68,7 +72,9 @@ function resetAtMilliseconds(window: unknown, now: number): number | undefined {
 }
 
 export function formatTimeUntilReset(resetAt: number | undefined, now = Date.now()): string | undefined {
-  if (!Number.isFinite(resetAt) || !Number.isFinite(now) || resetAt! <= now) return undefined;
+  if (resetAt == null || !Number.isFinite(resetAt) || !Number.isFinite(now) || resetAt <= now) {
+    return undefined;
+  }
 
   const totalSeconds = Math.ceil((resetAt - now) / 1_000);
 
@@ -179,6 +185,52 @@ export function parseRemainingQuotas(payload: unknown, now = Date.now()): Remain
   return quotas;
 }
 
+function mostConstrainedWindow(
+  accounts: RemainingQuotas[],
+  remainingKey: "fiveHour" | "weekly",
+  resetKey: "fiveHourResetAt" | "weeklyResetAt",
+): { remaining: number; resetAt?: number } | undefined {
+  if (accounts.length === 0) return undefined;
+
+  const windows = accounts.map((account) => ({
+    remaining: account[remainingKey],
+    resetAt: account[resetKey],
+  }));
+  if (windows.some(({ remaining }) => remaining == null || !Number.isFinite(remaining))) {
+    return undefined;
+  }
+
+  const selected = windows.reduce((mostConstrained, window) =>
+    window.remaining! < mostConstrained.remaining! ||
+    (window.remaining === mostConstrained.remaining &&
+      window.resetAt != null &&
+      (mostConstrained.resetAt == null || window.resetAt < mostConstrained.resetAt))
+      ? window
+      : mostConstrained,
+  );
+  return {
+    remaining: selected.remaining!,
+    resetAt: Number.isFinite(selected.resetAt) ? selected.resetAt : undefined,
+  };
+}
+
+export function aggregateRemainingQuotas(accounts: RemainingQuotas[]): RemainingQuotas {
+  const quotas: RemainingQuotas = {};
+  const fiveHour = mostConstrainedWindow(accounts, "fiveHour", "fiveHourResetAt");
+  const weekly = mostConstrainedWindow(accounts, "weekly", "weeklyResetAt");
+
+  if (fiveHour) {
+    quotas.fiveHour = fiveHour.remaining;
+    if (fiveHour.resetAt != null) quotas.fiveHourResetAt = fiveHour.resetAt;
+  }
+  if (weekly) {
+    quotas.weekly = weekly.remaining;
+    if (weekly.resetAt != null) quotas.weeklyResetAt = weekly.resetAt;
+  }
+  if (accounts.length > 1) quotas.accountMinimum = true;
+  return quotas;
+}
+
 function headerValue(headers: Record<string, string> | undefined, name: string): string | undefined {
   const target = name.toLowerCase();
   for (const [key, value] of Object.entries(headers ?? {})) {
@@ -199,7 +251,93 @@ function accountIdFromToken(token: string): string | undefined {
   }
 }
 
-export async function loadOpenAiCodexQuotas(ctx: ExtensionContext): Promise<RemainingQuotas> {
+async function fetchCodexQuotas(accessToken: string, accountId: string): Promise<RemainingQuotas> {
+  const response = await fetch(CODEX_USAGE_URL, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "ChatGPT-Account-Id": accountId,
+      Accept: "application/json",
+      Origin: "https://chatgpt.com",
+      Referer: "https://chatgpt.com/",
+      "User-Agent": "Mozilla/5.0",
+    },
+    signal: AbortSignal.timeout(CODEX_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`Codex usage request failed with HTTP ${response.status}`);
+  return parseRemainingQuotas(await response.json());
+}
+
+interface CpaCodexCredential {
+  accessToken: string;
+  accountId: string;
+}
+
+function expandHome(path: string): string {
+  if (path === "~") return homedir();
+  if (path.startsWith("~/") || path.startsWith("~\\")) return join(homedir(), path.slice(2));
+  return resolve(path);
+}
+
+function cpaAccountsDir(): string {
+  return expandHome(
+    process.env.CLIPROXYAPI_AUTH_DIR ??
+      process.env.CLIPROXYAPI_ACCOUNTS_DIR ??
+      join(homedir(), ".cli-proxy-api"),
+  );
+}
+
+function errorCode(error: unknown): string | undefined {
+  return error && typeof error === "object" && "code" in error
+    ? String((error as { code?: unknown }).code)
+    : undefined;
+}
+
+async function loadCpaCodexCredentials(): Promise<CpaCodexCredential[] | undefined> {
+  const directory = cpaAccountsDir();
+  let names: string[];
+  try {
+    names = await readdir(directory);
+  } catch (error) {
+    if (errorCode(error) === "ENOENT") return undefined;
+    throw new Error("Could not load a complete CPA credential set", { cause: error });
+  }
+
+  const credentials: CpaCodexCredential[] = [];
+  for (const name of names.filter((entry) => entry.toLowerCase().endsWith(".json"))) {
+    let record: UnknownRecord | undefined;
+    try {
+      record = asRecord(JSON.parse(await readFile(join(directory, name), "utf8")));
+    } catch (error) {
+      throw new Error("Could not load a complete CPA credential set", { cause: error });
+    }
+    if (record?.type !== "codex" || record.disabled === true) continue;
+    if (typeof record.access_token !== "string" || typeof record.account_id !== "string") {
+      throw new Error("Could not load a complete CPA credential set");
+    }
+    credentials.push({ accessToken: record.access_token, accountId: record.account_id });
+  }
+  return credentials;
+}
+
+async function loadCpaCodexQuotas(): Promise<RemainingQuotas | undefined> {
+  const credentials = await loadCpaCodexCredentials();
+  if (credentials === undefined) return undefined;
+  if (credentials.length === 0) throw new Error("Could not load a complete CPA credential set");
+
+  const results = await Promise.allSettled(
+    credentials.map((credential) => fetchCodexQuotas(credential.accessToken, credential.accountId)),
+  );
+  const quotas: RemainingQuotas[] = [];
+  for (const result of results) {
+    if (result.status === "rejected") {
+      throw new Error("Could not load a complete CPA quota snapshot");
+    }
+    quotas.push(result.value);
+  }
+  return aggregateRemainingQuotas(quotas);
+}
+
+async function loadPiCodexQuotas(ctx: ExtensionContext): Promise<RemainingQuotas> {
   const model =
     ctx.model?.provider === "openai-codex"
       ? ctx.model
@@ -211,17 +349,13 @@ export async function loadOpenAiCodexQuotas(ctx: ExtensionContext): Promise<Rema
 
   const accountId =
     headerValue(auth.headers, "chatgpt-account-id") ?? accountIdFromToken(auth.apiKey);
-  if (!accountId) return {};
+  return accountId ? fetchCodexQuotas(auth.apiKey, accountId).catch(() => ({})) : {};
+}
 
-  const response = await fetch(CODEX_USAGE_URL, {
-    headers: {
-      Authorization: `Bearer ${auth.apiKey}`,
-      "ChatGPT-Account-Id": accountId,
-      Accept: "application/json",
-    },
-    signal: AbortSignal.timeout(CODEX_TIMEOUT_MS),
-  });
-  if (!response.ok) return {};
-
-  return parseRemainingQuotas(await response.json());
+export async function loadOpenAiCodexQuotas(ctx: ExtensionContext): Promise<RemainingQuotas> {
+  if (ctx.model?.provider === "cpa") {
+    const cpaQuotas = await loadCpaCodexQuotas();
+    if (cpaQuotas != null) return cpaQuotas;
+  }
+  return loadPiCodexQuotas(ctx);
 }

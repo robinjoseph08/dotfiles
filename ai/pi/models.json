@@ -1,0 +1,11 @@
+{
+  "providers": {
+    "cpa": {
+      "modelOverrides": {
+        "gpt-5.6-sol": {
+          "contextWindow": 272000
+        }
+      }
+    }
+  }
+}

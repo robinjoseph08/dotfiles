@@ -12,9 +12,9 @@ When creating or updating GitHub issues that have dependencies, always record ea
 
 ## Git Conventions
 
-### Commit Message Format
+### Commit Message and PR Title Format
 
-Each commit should be in the format of `[{Category}] {Change description}`
+Each commit and PR title should be in the format of `[{Category}] {Change description}`
 
 **Categories** (used for changelog generation):
 
