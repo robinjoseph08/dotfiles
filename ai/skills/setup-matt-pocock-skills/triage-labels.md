@@ -12,4 +12,12 @@ The skills speak in terms of five canonical triage roles. This file maps those r
 
 When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding label string from this table.
 
+## Workflow labels
+
+| Role | Label in our tracker | Meaning |
+| ---- | -------------------- | ------- |
+| Specification | `spec` | Specification awaiting ticket breakdown; never an AFK execution signal |
+
+The specification label is separate from the five triage roles. In particular, never map it to `ready-for-agent`.
+
 Edit the right-hand column to match whatever vocabulary you actually use.
