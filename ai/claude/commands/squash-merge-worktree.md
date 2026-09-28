@@ -46,7 +46,7 @@ git merge --squash "$BRANCH"
 
 ### 5. Commit with Meaningful Message
 
-Create a single commit summarizing all the work. Follow the `[Category] Description` format from CLAUDE.md.
+Create a single commit summarizing all the work. Follow the `[Category] Description` format from AGENTS.md.
 
 ### 6. Clean Up Worktree
 

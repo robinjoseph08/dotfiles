@@ -156,11 +156,11 @@ preflight_sources() {
   fi
 
   for path in \
-    "$AI_DIR/CLAUDE.md" \
+    "$AI_DIR/AGENTS.md" \
     "$AI_DIR/claude/settings.json" \
     "$AI_DIR/claude/statusline.sh" \
     "$AI_DIR/claude/commands/squash-merge-worktree.md" \
-    "$AI_DIR/pi/AGENTS.md" \
+    "$AI_DIR/pi/APPEND_SYSTEM.md" \
     "$AI_DIR/pi/settings.json" \
     "$AI_DIR/pi/models.json" \
     "$AI_DIR/pi/keybindings.json" \
@@ -240,9 +240,20 @@ preflight_json_settings "$AI_DIR/pi/models.json" "$HOME/.pi/agent/models.json"
 echo
 echo "Setting up AI tools..."
 
-# Shared instructions used by Claude Code and agents that discover ~/AGENTS.md.
-link_path "$AI_DIR/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
-link_path "$AI_DIR/CLAUDE.md" "$HOME/AGENTS.md"
+# Shared instructions go in each agent's global slot. Claude Code has no
+# user-level AGENTS.md, so it reads them through ~/.claude/CLAUDE.md.
+link_path "$AI_DIR/AGENTS.md" "$HOME/.claude/CLAUDE.md"
+link_path "$AI_DIR/AGENTS.md" "$HOME/.pi/agent/AGENTS.md"
+link_path "$AI_DIR/AGENTS.md" "$HOME/.codex/AGENTS.md"
+
+# ~/AGENTS.md used to hold the shared instructions, but both agents treat it as a
+# project file for anything under $HOME, which loaded the instructions twice.
+for old_source in "$AI_DIR/AGENTS.md" "$AI_DIR/CLAUDE.md"; do
+  if [ -L "$HOME/AGENTS.md" ] && [ "$(readlink "$HOME/AGENTS.md")" = "$old_source" ]; then
+    echo "Removing $HOME/AGENTS.md..."
+    rm "$HOME/AGENTS.md"
+  fi
+done
 
 # Shared skills are canonical in this repository. Import skills from the old
 # per-entry layout before linking the whole directory into both agent locations.
@@ -257,7 +268,7 @@ link_path "$AI_DIR/claude/statusline.sh" "$HOME/.claude/statusline.sh"
 link_directory_entries "$AI_DIR/claude/commands" "$HOME/.claude/commands"
 
 # Pi configuration. Authentication, sessions, trust, and installed package caches stay local.
-link_path "$AI_DIR/pi/AGENTS.md" "$HOME/.pi/agent/AGENTS.md"
+link_path "$AI_DIR/pi/APPEND_SYSTEM.md" "$HOME/.pi/agent/APPEND_SYSTEM.md"
 merge_json_settings "$AI_DIR/pi/settings.json" "$HOME/.pi/agent/settings.json"
 merge_json_settings "$AI_DIR/pi/models.json" "$HOME/.pi/agent/models.json"
 link_path "$AI_DIR/pi/keybindings.json" "$HOME/.pi/agent/keybindings.json"

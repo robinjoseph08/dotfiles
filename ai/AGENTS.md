@@ -7,6 +7,11 @@ they shouldn't be used.
 Never use the AskUserQuestion tool. It doesn't allow for more dynamic responses
 which are sometimes necessary when answering questions.
 
+Project instructions go in `AGENTS.md`, not `CLAUDE.md`. Claude Code, Pi, and
+Codex all read `AGENTS.md`, but Codex ignores `CLAUDE.md` and Claude Code skips
+`AGENTS.md` when a `CLAUDE.md` exists. Never create a `CLAUDE.md` in a repo. If a
+repo I own has one, suggest renaming it to `AGENTS.md`.
+
 Shell commands run in zsh (1-indexed arrays, no word splitting). Use zsh idioms
 or wrap multi-step scripts in `bash <<'EOF'`.
 

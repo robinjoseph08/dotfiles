@@ -73,9 +73,15 @@ test_migration_and_idempotence() {
   ln -s "$external_skill" "$home/.agents/skills/linked-agent-skill"
   ln -s "$fixture/ai/skills/tdd" "$home/.agents/skills/tdd"
   ln -s ../../.agents/skills/local-agent-skill "$home/.claude/skills/local-agent-skill"
+  ln -s "$fixture/ai/CLAUDE.md" "$home/AGENTS.md"
 
   HOME="$home" OLD_DIR="$home/old" DOTFILES_DIR="$fixture" "$SETUP" >/dev/null
 
+  [ "$(readlink "$home/.claude/CLAUDE.md")" = "$fixture/ai/AGENTS.md" ]
+  [ "$(readlink "$home/.pi/agent/AGENTS.md")" = "$fixture/ai/AGENTS.md" ]
+  [ "$(readlink "$home/.codex/AGENTS.md")" = "$fixture/ai/AGENTS.md" ]
+  [ "$(readlink "$home/.pi/agent/APPEND_SYSTEM.md")" = "$fixture/ai/pi/APPEND_SYSTEM.md" ]
+  [ ! -e "$home/AGENTS.md" ] && [ ! -L "$home/AGENTS.md" ]
   [ "$(readlink "$home/.agents/skills")" = "$fixture/ai/skills" ]
   [ "$(readlink "$home/.claude/skills")" = "$fixture/ai/skills" ]
   [ -f "$fixture/ai/skills/local-agent-skill/SKILL.md" ]

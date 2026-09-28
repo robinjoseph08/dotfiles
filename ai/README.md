@@ -4,10 +4,10 @@ Portable configuration for Claude Code, Pi, Codex, and other agents lives here.
 
 ## Managed configuration
 
-- `CLAUDE.md` is linked to both `~/.claude/CLAUDE.md` and `~/AGENTS.md`.
+- `AGENTS.md` holds the global instructions shared by every agent. It is linked to `~/.claude/CLAUDE.md`, `~/.pi/agent/AGENTS.md`, and `~/.codex/AGENTS.md`. Claude Code only reads `AGENTS.md` as a project file, so the `CLAUDE.md` link is its user-level entry point.
 - `skills/` is the canonical skill collection. The whole directory is linked to both `~/.agents/skills/` and `~/.claude/skills/`, so skills installed through either location appear in this repository. Codex discovers the user-level skills from `~/.agents/skills/` directly.
 - `claude/` contains Claude Code settings, commands, and the status line.
-- `pi/` contains Pi instructions, settings, model overrides, keybindings, extensions, and themes. The entire extensions directory is linked so newly created extensions are immediately tracked by this repository. Managed settings and model overrides are merged into Pi's local files so Pi can keep writable state out of this repository.
+- `pi/` contains Pi-only instructions (`APPEND_SYSTEM.md`, appended to Pi's system prompt), settings, model overrides, keybindings, extensions, and themes. The entire extensions directory is linked so newly created extensions are immediately tracked by this repository. Managed settings and model overrides are merged into Pi's local files so Pi can keep writable state out of this repository.
 
 Run `./scripts/setup-ai.sh` to install only the AI configuration, or run `./setup.sh` for the full machine setup.
 
