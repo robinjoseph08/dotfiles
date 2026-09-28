@@ -11,7 +11,7 @@ Ship the current work through a merged pull request. Quality is more important t
 
 Read the repository instructions and inspect the branch, working tree, remotes, default branch, existing pull request, and relevant issue.
 
-Confirm that the intended changes have been reviewed and that the appropriate local checks pass. If the work has not been reviewed, or it changed materially after review, use the code-review skill and resolve every valid finding before publishing.
+Confirm that the intended changes have been reviewed with the code-review skill and that the appropriate local checks pass. If the work has not been reviewed with that skill, or it changed materially after review, use the code-review skill and resolve every valid finding before publishing.
 
 Do not discard unrelated work. Put the intended changes on a feature branch and commit them if needed. If you're already on a non-default branch, you can use that. Never push directly to the default branch. Follow repository conventions for commits, branches, pull requests, and issue references.
 
@@ -19,13 +19,15 @@ Do not discard unrelated work. Put the intended changes on a feature branch and 
 
 Bring the branch up to date with the remote default branch when needed, resolving conflicts carefully and rerunning affected checks. Push the reviewed commits and create or update the pull request with an accurate summary, test evidence, and issue-closing reference when applicable.
 
-Enable automatic merge using the squash strategy. If automatic merge is unavailable, wait for all required gates and then squash merge through the hosting platform.
+Before attempting automatic merge, verify whether branch protection or repository rules actually require the pending status checks. Never assume a command such as `gh pr merge --auto` will schedule a later merge: when no required gate blocks the pull request, the hosting platform may merge immediately while CI is still pending.
+
+If pending checks are enforced as required gates, enable automatic merge using the squash strategy. Verify that the pull request remains open and that the platform records a real automatic-merge request while the checks run. If checks are not enforced as required gates, do not invoke any merge command while a check is pending. Wait for every hosted check to complete successfully, then squash merge through the hosting platform. Treat those checks as blocking even when the platform reports the pull request as mergeable.
 
 Verify hosted state rather than assuming a command succeeded. The pull request must point at the expected branch and commit.
 
 ## Shepherd the pull request
 
-Stay with the pull request until it merges or reaches a genuine blocker that requires user input.
+Stay with the pull request until it merges or reaches a genuine blocker that requires user input. When checks are not protected gates, watch or re-query them until every check has a terminal result; a watch timeout or interrupted command is not a successful result and must not unblock merging.
 
 When CI fails, inspect the failing job and logs, diagnose the cause, fix the underlying issue, run the relevant local checks, commit, and push. Review substantive repairs before publishing them.
 
