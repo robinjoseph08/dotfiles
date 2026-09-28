@@ -1,0 +1,32 @@
+# Ported from the "Robin" iTerm2 profile (iterm.json)
+
+# Colors: Catppuccin Mocha in dark mode, Latte in light mode. These are custom
+# themes in ./themes because Ghostty's built-in Catppuccin themes use different
+# bright colors than the iTerm profile did.
+theme = light:robin-light,dark:robin-dark
+
+# Font
+font-family = JetBrains Mono
+font-size = 13
+
+# Cursor
+cursor-style = block
+cursor-style-blink = false
+
+# Window
+window-width = 80
+window-height = 24
+
+# Bell
+bell-features = system,attention,title,border
+
+# Keys
+macos-option-as-alt = false
+# Option+Left/Right jump by word
+keybind = alt+left=esc:b
+keybind = alt+right=esc:f
+# Option+Backspace deletes the previous word
+keybind = alt+backspace=text:\x17
+# Option+Up/Down
+keybind = alt+up=text:\x1b\x1b[A
+keybind = alt+down=text:\x1b\x1b[B

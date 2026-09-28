@@ -227,6 +227,24 @@ function setup_iterm2 () {
   echo
 }
 
+function setup_ghostty () {
+  echo
+  echo "Setting up Ghostty..."
+  mkdir -p ~/.config/ghostty
+  if check_file ~/.config/ghostty/config.ghostty; then
+    echo "Copying old Ghostty config.ghostty into $OLD_DIR/ghostty.ghostty..."
+    cp ~/.config/ghostty/config.ghostty "$OLD_DIR/ghostty.ghostty"
+  fi
+  ln -sf "$DOTFILES_DIR/ghostty/config.ghostty" ~/.config/ghostty/config.ghostty
+  if [ -d ~/.config/ghostty/themes ] && [ ! -h ~/.config/ghostty/themes ]; then
+    echo "Copying old Ghostty themes into $OLD_DIR/ghostty-themes..."
+    mv ~/.config/ghostty/themes "$OLD_DIR/ghostty-themes"
+  fi
+  ln -sfn "$DOTFILES_DIR/ghostty/themes" ~/.config/ghostty/themes
+  echo "...done"
+  echo
+}
+
 function setup_vscode () {
   echo
   echo "Setting up VS Code..."
@@ -269,6 +287,7 @@ function setup_platform_configuration () {
   fi
 
   setup_iterm2
+  setup_ghostty
   setup_vscode
   setup_powerline_fonts
   setup_macos_preferences

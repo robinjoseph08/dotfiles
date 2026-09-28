@@ -24,7 +24,7 @@ The standalone AI setup requires `jq`.
 * Installs command-line dependencies with Homebrew on macOS
 * Backs up existing configuration under `old/`
 * Symlinks shell, terminal, editor, and application configuration
-* Sets up Vim, Neovim, Zsh, iTerm2, VS Code, Herdr, and wktr
+* Sets up Vim, Neovim, Zsh, iTerm2, Ghostty, VS Code, Herdr, and wktr
 * Sets up shared AI instructions and skills
 * Sets up Claude Code settings, commands, and status line
 * Sets up Pi settings, packages, keybindings, extensions, and themes
