@@ -197,6 +197,7 @@ setopt HIST_SAVE_NO_DUPS
 setopt HIST_EXPIRE_DUPS_FIRST
 
 # local binaries
+export PATH="$HOME/.local/bin:$PATH"
 [[ -s "$HOME/.local/bin/env" ]] && source "$HOME/.local/bin/env"
 
 # export ANTHROPIC_MODEL=claude-opus-4-6

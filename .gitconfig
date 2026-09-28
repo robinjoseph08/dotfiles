@@ -11,3 +11,9 @@
   wip = !git add . && git commit -am "wip"
 [init]
   defaultBranch = master
+[credential "https://github.com"]
+	helper = 
+	helper = !/opt/homebrew/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = 
+	helper = !/opt/homebrew/bin/gh auth git-credential
