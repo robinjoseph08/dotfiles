@@ -63,7 +63,7 @@ ENTRYPOINT ["/usr/local/bin/app"]
 ## Deploy a new app
 
 1. **Put the project in git with at least one commit.** Push it to Forgejo, where pushing creates a private repo:
-   `git remote add origin git@forgejo.local.rmj.io:robin/<name>.git && git push -u origin main`.
+   `git remote add origin git@forgejo.local.rmj.io:robin/<name>.git && git push -u origin master`.
    Follow the repo's commit message conventions. The `forgejo-repos` skill covers SSH setup, existing remotes and troubleshooting.
 2. **Run `atlas init`** to create `atlas.yaml`, then edit it (reference below).
 3. **Commit `atlas.yaml`.** Deploys refuse to run with uncommitted changes, and that includes untracked files. To release a version, tag it (`git tag v0.1.0`) and push the tag.
