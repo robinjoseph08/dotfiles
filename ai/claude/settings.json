@@ -8,7 +8,7 @@
       "~/.worktrees/"
     ]
   },
-  "model": "fable",
+  "model": "claude-fable-5-1",
   "statusLine": {
     "type": "command",
     "command": "$HOME/.claude/statusline.sh"
@@ -33,7 +33,15 @@
   },
   "alwaysThinkingEnabled": true,
   "effortLevel": "high",
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "high"
+    }
+  },
   "autoUpdatesChannel": "latest",
   "skipDangerousModePermissionPrompt": true,
-  "preferredNotifChannel": "terminal_bell"
+  "theme": "dark",
+  "preferredNotifChannel": "terminal_bell",
+  "feedbackDrafts": "off",
+  "hooks": {"SessionStart":[{"matcher":"^(startup|resume|clear|compact|fork)$","hooks":[{"type":"command","command":"bash '/Users/robinjoseph/.claude/hooks/herdr-agent-state.sh' session","timeout":10}]}]}
 }
