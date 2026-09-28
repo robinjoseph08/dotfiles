@@ -11,3 +11,15 @@ alias gf="git fetch"
 alias gr="git rebase"
 alias gb="git branch"
 alias k='kubectl "--context=${KUBECTL_CONTEXT:-$(kubectl config current-context)}" ${KUBECTL_NAMESPACE/[[:alnum:]-]*/--namespace=${KUBECTL_NAMESPACE}}'
+
+alias pia="pi --model openai-codex/gpt-6-astra"
+alias pis="pi --model openai-codex/gpt-6-sol"
+alias pil="pi --model openai-codex/gpt-6-luna"
+
+alias cc="claude --allow-dangerously-skip-permissions"
+alias ccf="claude --allow-dangerously-skip-permissions --model claude-fable-5-1 --effort high"
+alias ccfh="claude --allow-dangerously-skip-permissions --model claude-fable-5-1 --effort high"
+alias ccfm="claude --allow-dangerously-skip-permissions --model claude-fable-5-1 --effort medium"
+alias cco="claude --allow-dangerously-skip-permissions --model claude-opus-5-5 --effort high"
+alias ccoh="claude --allow-dangerously-skip-permissions --model claude-opus-5-5 --effort high"
+alias ccom="claude --allow-dangerously-skip-permissions --model claude-opus-5-5 --effort medium"
