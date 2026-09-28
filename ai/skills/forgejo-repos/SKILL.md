@@ -53,10 +53,27 @@ Forgejo Actions runs workflows from `.forgejo/workflows/*.yml` (and `.github/wor
       echo "${{ secrets.REGISTRY_TOKEN }}" | docker login forgejo.local.rmj.io -u robin --password-stdin
       docker push forgejo.local.rmj.io/robin/<app>:<tag>
   ```
+- **GitHub API calls need `MISE_GITHUB_TOKEN`.** The runner puts Forgejo's job token in `GITHUB_TOKEN`, and a workflow can't override it. Tools that call GitHub's API with it, like mise looking up `github:` tools, get a 401. `MISE_GITHUB_TOKEN` is a user-level Actions secret already set on `robin` (a fine-grained GitHub token with read-only access to public repos). Pass it to `jdx/mise-action`, and mise prefers it over `GITHUB_TOKEN`:
+  ```yaml
+  - uses: https://github.com/jdx/mise-action@<ref>
+    with:
+      install: true
+      github_token: ${{ secrets.MISE_GITHUB_TOKEN }}
+  ```
+  For other tools that read `GITHUB_TOKEN`, set their own token variable from the secret, or run them with `env -u GITHUB_TOKEN` to go anonymous.
 - **Limits.** At most 2 jobs run at once, and a job is cut off after 1 hour.
 - **Hostnames.** `*.local.rmj.io` names resolve inside jobs.
 
-To check a run, use the API (see below): `GET /repos/robin/<repo>/actions/tasks` lists each job with its status (`success`, `failure`, `running`, ...). The job logs are only visible in the web UI at `https://forgejo.local.rmj.io/robin/<repo>/actions/runs/<n>`, since the API token can't read them. If a job fails and the cause isn't obvious, ask the user to paste the failing step's output.
+To check a run, use the API (see below): `GET /repos/robin/<repo>/actions/tasks` lists each job with its status (`success`, `failure`, `running`, ...). The job logs are only visible in the web UI at `https://forgejo.local.rmj.io/robin/<repo>/actions/runs/<n>`, since the API token can't read them. If a job fails and the cause isn't obvious, ask the user to paste the failing step's output. To reproduce a run locally with the same runner, run `forgejo-runner exec` from the runner's image against a fresh `git init` copy of the repo (a worktree's `.git` file doesn't resolve inside the container):
+
+```sh
+docker run --rm --user root -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD":"$PWD" -w "$PWD" \
+  code.forgejo.org/forgejo/runner:<runner version> forgejo-runner exec \
+  -W .forgejo/workflows/ci.yml -j <job> -E workflow_dispatch -i ghcr.io/catthehacker/ubuntu:act-24.04 \
+  -s GITHUB_TOKEN=bogus
+```
+
+`GET /admin/actions/runners` shows the runner's version. A local run skips `actions/checkout` and copies the directory instead, and `-s GITHUB_TOKEN=bogus` stands in for the job token GitHub rejects.
 
 The runner itself is the `forgejo-runner` app on Atlas. Changing it (labels, capacity, image versions) is an Atlas change, so check with the user first.
 
