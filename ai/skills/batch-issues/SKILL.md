@@ -16,9 +16,11 @@ The prompt templates for the three agent roles live in [`PROMPTS.md`](PROMPTS.md
 
 Read every issue with its comments. Note the acceptance criteria, any triage brief, and any decision the issue leaves open; those decisions are yours to make unless they materially change scope, in which case surface them to the user without blocking the batch.
 
+Before creating worktrees, map each issue to the files and symbols it will touch (the issue's file references plus a quick grep) and look for overlap between issues. Two issues that edit the same handler, the same test helper, the same route table, the same generated-type consumer, or the same `AGENTS.md` section must not run in the same batch: sequence them, and record the order with the tracker's native blocked-by relationship so the second one cannot start until the first has merged. The repo's branch protection is deliberately not strict (no "up to date before merge"), so two green PRs that both touch one file can land in an order their CI never tested; a semantic clash (a renamed field one side, a new consumer of the old name on the other) then breaks the default branch and needs a hotfix. Keeping overlapping work in separate, blocked tickets is cheaper than that hotfix. Do not propose making protection strict; the owner has chosen speed here.
+
 Create one worktree per issue off the current remote default branch, named `<issue>-<slug>` with branch `wktr/<issue>-<slug>` (or the repo's convention), and run the repo's setup command in each, in parallel. Plain `git worktree add` is enough; skip multiplexer tooling.
 
-Completion criterion: every issue is understood, and every worktree exists, is set up, and sits on the same remote default commit.
+Completion criterion: every issue is understood, overlapping issues are sequenced with native blocks, and every worktree exists, is set up, and sits on the same remote default commit.
 
 ## 2. Dispatch one implementation agent per issue
 
@@ -39,7 +41,7 @@ Completion criterion: every issue has a committed, unpushed branch, a passing fu
 
 As each implementation report arrives, launch a fresh agent named `qa-<issue>` with the QA template. Do not wait for the whole batch. Give it the commit SHA, the implementer's report verbatim as claims to verify, the checklist, and your own additions: anything a reviewer flagged that you want independently confirmed, any claim that sounds too convenient, and a scope check against the merge base.
 
-QA never modifies tracked files. Mutation checks go through `go test -overlay` or edit-and-restore. Manual verification runs a freshly built binary on a free port with an isolated data directory in the scratchpad, never the main checkout's data. The full check is rerun only when the machine's one-minute load is low; concurrent full checks from several worktrees cause spurious docs-server timeouts and unit-test timeouts, so the implementer's passing run plus targeted reruns is acceptable evidence when load is high.
+QA never modifies tracked files. Mutation checks go through `go test -overlay` or edit-and-restore. Manual verification runs a freshly built binary on a free port with an isolated data directory in a per-agent scratchpad subdirectory (`scratchpad/qa-<issue>/`), never the main checkout's data and never a directory another agent created; the scratchpad is shared across every agent in the session, and a generic `manual/` directory has been overwritten by a second QA agent before. The full check is rerun only when the machine's one-minute load is low; concurrent full checks from several worktrees cause spurious docs-server timeouts and unit-test timeouts, so the implementer's passing run plus targeted reruns is acceptable evidence when load is high.
 
 If the branch changes under QA (a late amend, a squash), tell QA the new SHA and whether the tree is identical (`git diff <old> <new>` empty) so it can keep its results. If the tree differs, QA re-checks the delta only.
 
@@ -73,8 +75,15 @@ Completion criterion: `git worktree list` shows none of the batch's worktrees, a
 
 ## 7. Report and triage follow-ups
 
-Report to the user: a table of issue, PR, and what shipped; the judgment calls made on their behalf; and the follow-ups that reviewers and QA surfaced, each with a recommendation to file or skip and why. File nothing until asked.
+Report to the user: a table of issue, PR, and what shipped; the judgment calls made on their behalf; and the follow-ups that reviewers and QA surfaced. File nothing until asked.
 
-When asked to file, write each ticket in the repo's issue conventions with the exact files and line numbers from the review reports, a proposed fix, notes for the implementer, and the triage label the repo uses for agent-ready work. One consistency ticket can bundle several cosmetic items; the user's agents learn patterns from the codebase, so inconsistent examples are worth fixing even when harmless.
+Triage the follow-ups before presenting them. Three reviewers plus a QA agent per PR will always produce a list, and each round of fixes produces a list of about the same size, so the list is not a queue. Split it in two:
 
-Completion criterion: the user has the table, the decisions, and the follow-up list, and any requested tickets exist.
+- **Worth filing**: security issues, data loss or corruption, and behavior a user would actually see (a wrong status a client acts on, a device that fails a sync, a broken flow). Say why each one qualifies in a sentence.
+- **Noted and dropped**: everything else. Cosmetic inconsistencies, hardening of paths no user reaches, edge cases of edge cases, duplicated code, doc wording, test selectors. List them in one compact paragraph so the user knows they were seen, and do not attach a recommendation to file. They already live in the PR bodies.
+
+Default to the second bucket. When nothing qualifies for the first, say so plainly rather than promoting a cosmetic item to fill it. Only run class-level sweeps for a "worth filing" item when the batch itself showed the class is large (several instances across packages); a sweep that turns up two more harmless cases is a sign to stop, not to file.
+
+When asked to file, write each ticket in the repo's issue conventions with the exact files and line numbers from the review reports, a proposed fix, notes for the implementer, and the triage label the repo uses for agent-ready work. One ticket may bundle several items from the same code area when one implementer with that context fixes them cheaply together.
+
+Completion criterion: the user has the table, the decisions, and the two-bucket follow-up list, and any requested tickets exist.

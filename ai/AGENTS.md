@@ -66,3 +66,6 @@ will be checked-in, write it in Go. Python can be used for one-off scripts that
 won't be committed, but anything real should be done in Go.
 
 When working with Node projects, always prefer pnpm over npm or yarn.
+
+When starting a new repo, prefer `master` as the default branch instead of
+`main`.
