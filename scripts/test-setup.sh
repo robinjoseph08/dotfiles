@@ -276,7 +276,7 @@ test_wktr_config_semantics() {
   grep -Fxq 'worktree_directory: /Users/robinjoseph/.worktrees' "$DOTFILES_REPO/wktr.yaml"
   grep -Fxq 'branch_prefix: wktr/' "$DOTFILES_REPO/wktr.yaml"
   grep -Fxq '  direction: vertical' "$DOTFILES_REPO/wktr.yaml"
-  grep -Fxq '    - command: pi' "$DOTFILES_REPO/wktr.yaml"
+  grep -Fxq '    - command: ccom' "$DOTFILES_REPO/wktr.yaml"
 }
 
 test_platform_detection() (

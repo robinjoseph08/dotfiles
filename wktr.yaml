@@ -3,5 +3,5 @@ branch_prefix: wktr/
 layout:
   direction: vertical
   panes:
-    - command: pi
+    - command: ccom
     - {}
