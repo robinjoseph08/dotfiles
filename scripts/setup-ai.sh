@@ -106,20 +106,6 @@ migrate_skill_entries() {
   done
 }
 
-copy_if_missing() {
-  local source=$1
-  local destination=$2
-
-  if [ -e "$destination" ] || [ -L "$destination" ]; then
-    echo "Leaving existing $destination untouched."
-    return
-  fi
-
-  mkdir -p "$(dirname "$destination")"
-  echo "Copying starter config to $destination..."
-  cp "$source" "$destination"
-}
-
 require_source_file() {
   local path=$1
 
@@ -191,51 +177,17 @@ preflight_sources() {
   done
 }
 
-preflight_json_settings() {
-  local source=$1
-  local destination=$2
+preflight_existing_json() {
+  local destination=$1
 
-  if [ ! -e "$destination" ] && [ ! -L "$destination" ]; then
-    return
+  if [ -e "$destination" ] || [ -L "$destination" ]; then
+    validate_single_json_object "$destination"
   fi
-
-  validate_single_json_object "$destination"
-  if ! jq -s -e 'length == 2 and (.[0] * .[1] | type == "object")' "$destination" "$source" >/dev/null; then
-    echo "Could not merge $destination; leaving all AI configuration untouched." >&2
-    exit 1
-  fi
-}
-
-merge_json_settings() {
-  local source=$1
-  local destination=$2
-  local temporary
-
-  if [ ! -e "$destination" ] && [ ! -L "$destination" ]; then
-    copy_if_missing "$source" "$destination"
-    return
-  fi
-
-  temporary=$(mktemp)
-  if ! jq -s '.[0] * .[1]' "$destination" "$source" > "$temporary"; then
-    rm -f "$temporary"
-    echo "Could not merge $destination; leaving it untouched." >&2
-    exit 1
-  fi
-
-  if [ ! -L "$destination" ] && cmp -s "$destination" "$temporary"; then
-    rm -f "$temporary"
-    return
-  fi
-
-  backup_path "$destination"
-  echo "Updating managed settings in $destination..."
-  mv "$temporary" "$destination"
 }
 
 preflight_sources
-preflight_json_settings "$AI_DIR/pi/settings.json" "$HOME/.pi/agent/settings.json"
-preflight_json_settings "$AI_DIR/pi/models.json" "$HOME/.pi/agent/models.json"
+preflight_existing_json "$HOME/.pi/agent/settings.json"
+preflight_existing_json "$HOME/.pi/agent/models.json"
 
 echo
 echo "Setting up AI tools..."
@@ -269,8 +221,8 @@ link_directory_entries "$AI_DIR/claude/commands" "$HOME/.claude/commands"
 
 # Pi configuration. Authentication, sessions, trust, and installed package caches stay local.
 link_path "$AI_DIR/pi/APPEND_SYSTEM.md" "$HOME/.pi/agent/APPEND_SYSTEM.md"
-merge_json_settings "$AI_DIR/pi/settings.json" "$HOME/.pi/agent/settings.json"
-merge_json_settings "$AI_DIR/pi/models.json" "$HOME/.pi/agent/models.json"
+link_path "$AI_DIR/pi/settings.json" "$HOME/.pi/agent/settings.json"
+link_path "$AI_DIR/pi/models.json" "$HOME/.pi/agent/models.json"
 link_path "$AI_DIR/pi/keybindings.json" "$HOME/.pi/agent/keybindings.json"
 link_path "$AI_DIR/pi/extensions" "$HOME/.pi/agent/extensions"
 link_directory_entries "$AI_DIR/pi/themes" "$HOME/.pi/agent/themes"

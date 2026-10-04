@@ -7,7 +7,7 @@ Portable configuration for Claude Code, Pi, Codex, and other agents lives here.
 - `AGENTS.md` holds the global instructions shared by every agent. It is linked to `~/.claude/CLAUDE.md`, `~/.pi/agent/AGENTS.md`, and `~/.codex/AGENTS.md`. Claude Code only reads `AGENTS.md` as a project file, so the `CLAUDE.md` link is its user-level entry point.
 - `skills/` is the canonical skill collection. The whole directory is linked to both `~/.agents/skills/` and `~/.claude/skills/`, so skills installed through either location appear in this repository. Codex discovers the user-level skills from `~/.agents/skills/` directly.
 - `claude/` contains Claude Code settings, commands, and the status line.
-- `pi/` contains Pi-only instructions (`APPEND_SYSTEM.md`, appended to Pi's system prompt), settings, model overrides, keybindings, extensions, and themes. The entire extensions directory is linked so newly created extensions are immediately tracked by this repository. Managed settings and model overrides are merged into Pi's local files so Pi can keep writable state out of this repository.
+- `pi/` contains Pi-only instructions (`APPEND_SYSTEM.md`, appended to Pi's system prompt), settings, model overrides, keybindings, extensions, and themes. The entire extensions directory is linked so newly created extensions are immediately tracked by this repository. Settings and model overrides are also symlinked, so edits made by Pi or by hand update the repository copies. This includes generated fields in settings, such as `lastChangelogVersion`.
 
 Run `./scripts/setup-ai.sh` to install only the AI configuration, or run `./setup.sh` for the full machine setup.
 
@@ -19,7 +19,7 @@ Existing files and managed directories are moved under `old/ai/` before they are
 
 Credentials and generated state must not be committed. This includes:
 
-- Pi `auth.json`, sessions, trust decisions, package caches, generated changelog version state, and machine-specific model configuration not covered by the managed overrides
+- Pi `auth.json`, sessions, trust decisions, package caches, and generated model catalog state
 - Claude history, projects, sessions, caches, backups, and plugin caches
 - Shared skill manager `.skill-lock.json` state
 - Codex authentication, history, sessions, caches, logs, project trust, and command approval rules

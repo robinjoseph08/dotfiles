@@ -93,12 +93,21 @@ test_migration_and_idempotence() {
   [ -f "$home/.claude/skills/local-claude-skill/SKILL.md" ]
   [ "$(readlink "$home/.pi/agent/extensions")" = "$fixture/ai/pi/extensions" ]
   [ -f "$home/old/ai/.pi/agent/extensions/local-only/index.ts" ]
-  [ "$(jq -r .lastChangelogVersion "$home/.pi/agent/settings.json")" = "9.9.9" ]
+  [ "$(readlink "$home/.pi/agent/settings.json")" = "$fixture/ai/pi/settings.json" ]
+  [ "$(readlink "$home/.pi/agent/models.json")" = "$fixture/ai/pi/models.json" ]
   [ "$(jq -r .theme "$home/.pi/agent/settings.json")" = "robin-iterm" ]
-  [ "$(jq -r .machineOnly "$home/.pi/agent/settings.json")" = "true" ]
+  [ "$(jq -r .machineOnly "$home/.pi/agent/settings.json")" = "null" ]
   [ "$(jq -r '.providers.cpa.modelOverrides["gpt-5.6-sol"].contextWindow' "$home/.pi/agent/models.json")" = "272000" ]
-  [ "$(jq -r '.providers.cpa.modelOverrides["other-model"].contextWindow' "$home/.pi/agent/models.json")" = "128000" ]
-  [ "$(jq -r .machineOnly "$home/.pi/agent/models.json")" = "true" ]
+  [ "$(jq -r .lastChangelogVersion "$home/old/ai/.pi/agent/settings.json")" = "9.9.9" ]
+  [ "$(jq -r .machineOnly "$home/old/ai/.pi/agent/settings.json")" = "true" ]
+  [ "$(jq -r '.providers.cpa.modelOverrides["other-model"].contextWindow' "$home/old/ai/.pi/agent/models.json")" = "128000" ]
+  [ "$(jq -r .machineOnly "$home/old/ai/.pi/agent/models.json")" = "true" ]
+
+  # Writes through Pi's config paths update the repository copies.
+  printf '{"theme":"updated"}\n' > "$home/.pi/agent/settings.json"
+  printf '{"providers":{}}\n' > "$home/.pi/agent/models.json"
+  [ "$(jq -r .theme "$fixture/ai/pi/settings.json")" = "updated" ]
+  [ "$(jq '.providers | length' "$fixture/ai/pi/models.json")" = "0" ]
   [ ! -e "$home/.codex/skills" ]
   [ ! -e "$home/.codex/rules" ]
 
@@ -106,6 +115,9 @@ test_migration_and_idempotence() {
   HOME="$home" OLD_DIR="$home/old" DOTFILES_DIR="$fixture" "$SETUP" >/dev/null
   backups_after=$(find "$home/old" -mindepth 1 | wc -l | tr -d ' ')
   [ "$backups_before" = "$backups_after" ]
+  [ "$(readlink "$home/.pi/agent/settings.json")" = "$fixture/ai/pi/settings.json" ]
+  [ "$(readlink "$home/.pi/agent/models.json")" = "$fixture/ai/pi/models.json" ]
+  [ "$(jq -r .theme "$home/.pi/agent/settings.json")" = "updated" ]
 }
 
 test_failed_skill_import_is_retryable() {
