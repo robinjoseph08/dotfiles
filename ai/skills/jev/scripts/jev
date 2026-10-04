@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Send one TypeSafe System One request to Jev and print the response JSON with
+# an added "_meta" object: elapsed_ms (round trip) and cost_usd.
+#
+# Usage: jev < request.json
+#   request.json holds {"state": ..., "questions": {...}}; "model" defaults to jev-latest.
+# The API key comes from $TYPESAFE_API_KEY, else the macOS keychain item "typesafe-api-key".
+# On a non-2xx response the exact status and body go to stderr and the exit code is 1.
+set -euo pipefail
+
+price_per_mtok="${JEV_PRICE_PER_MTOK:-0.042}" # USD per million input tokens; output is free
+key="${TYPESAFE_API_KEY:-$(security find-generic-password -s typesafe-api-key -w)}"
+body="$(jq -c '.model //= "jev-latest"')"
+
+out="$(mktemp)"
+trap 'rm -f "$out"' EXIT
+
+for attempt in 1 2 3 4; do
+  read -r status secs < <(curl -sS -o "$out" -w '%{http_code} %{time_total}\n' \
+    -X POST https://api.typesafe.ai/v1/systemone \
+    -H @<(printf 'Authorization: Bearer %s\n' "$key") \
+    -H 'Content-Type: application/json' \
+    --data-binary @- <<<"$body")
+  # 429 = rate limited, 529 = overloaded: back off and retry
+  [[ $status == 429 || $status == 529 ]] && ((attempt < 4)) && { sleep $((attempt * 2)); continue; }
+  break
+done
+
+if [[ $status != 2* ]]; then
+  echo "HTTP $status" >&2
+  cat "$out" >&2
+  echo >&2
+  exit 1
+fi
+
+jq --argjson secs "$secs" --argjson price "$price_per_mtok" \
+  '. + {_meta: {elapsed_ms: ($secs * 1000 | round), cost_usd: (.usage.input_tokens * $price / 1000000)}}' "$out"

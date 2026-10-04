@@ -7,6 +7,10 @@ they shouldn't be used.
 Never use the AskUserQuestion tool. It doesn't allow for more dynamic responses
 which are sometimes necessary when answering questions.
 
+When a task means judging many pieces of text one by one (triaging or deduping
+issues, sorting log lines, test failures, or grep hits by meaning, ranking
+search results), consider the `jev` skill before reading them all yourself.
+
 Project instructions go in `AGENTS.md`, not `CLAUDE.md`. Claude Code, Pi, and
 Codex all read `AGENTS.md`, but Codex ignores `CLAUDE.md` and Claude Code skips
 `AGENTS.md` when a `CLAUDE.md` exists. Never create a `CLAUDE.md` in a repo. If a

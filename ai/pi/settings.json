@@ -3,6 +3,9 @@
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.6-sol",
   "defaultThinkingLevel": "high",
+  "defaultTools": [
+    "+codemode"
+  ],
   "packages": [
     "npm:pi-subscription-meter",
     "npm:pi-web-access",

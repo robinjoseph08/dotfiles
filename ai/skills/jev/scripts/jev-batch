@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Ask Jev the same questions about many items, one request per item, in parallel.
+#
+# Usage: jev-batch questions.json < items.jsonl > results.jsonl
+#   items.jsonl: one {"id": ..., "state": ...} per line. An item may carry its own
+#   "questions" to override questions.json.
+#   results.jsonl: one line per item, in input order: {"id": ..., <jev response>}
+#   or {"id": ..., "error": "<exact HTTP status and body>"}.
+# A summary (items, errors, wall time, total cost) goes to stderr.
+# JEV_PARALLEL sets the number of concurrent requests (default 8).
+set -euo pipefail
+
+questions="$1"
+parallel="${JEV_PARALLEL:-8}"
+here="$(cd "$(dirname "$0")" && pwd)"
+TYPESAFE_API_KEY="${TYPESAFE_API_KEY:-$(security find-generic-password -s typesafe-api-key -w)}"
+export TYPESAFE_API_KEY questions here
+
+now_ms() { perl -MTime::HiRes=time -e 'printf "%.0f", time * 1000'; }
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+i=0
+while IFS= read -r line; do
+  [[ -z $line ]] && continue
+  printf '%s\n' "$line" >"$tmp/$(printf %06d "$i").in"
+  i=$((i + 1))
+done
+((i == 0)) && { echo "jev-batch: no items on stdin" >&2; exit 1; }
+
+start="$(now_ms)"
+printf '%s\n' "$tmp"/*.in | xargs -P "$parallel" -n1 bash -c '
+  f="$1"
+  id="$(jq -c .id "$f")"
+  if res="$(jq -c --slurpfile q "$questions" "{state, questions: (.questions // \$q[0])}" "$f" | "$here/jev" 2>"$f.err")"; then
+    jq -c --argjson id "$id" "{id: \$id} + ." <<<"$res"
+  else
+    jq -cn --argjson id "$id" --rawfile e "$f.err" "{id: \$id, error: \$e}"
+  fi >"${f%.in}.out"
+' _
+elapsed=$(($(now_ms) - start))
+
+cat "$tmp"/*.out
+cat "$tmp"/*.out | jq -rs --argjson ms "$elapsed" '
+  "jev-batch: \(length) items, \(map(select(.error)) | length) errors, \($ms) ms wall, $\(map(._meta.cost_usd // 0) | add) total"
+' >&2
