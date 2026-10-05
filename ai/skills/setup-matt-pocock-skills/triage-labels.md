@@ -17,7 +17,8 @@ When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the 
 | Role | Label in our tracker | Meaning |
 | ---- | -------------------- | ------- |
 | Specification | `spec` | Specification awaiting ticket breakdown; never an AFK execution signal |
+| Claimed | `in-progress` | An agent or human has claimed the ticket and is working on it |
 
-The specification label is separate from the five triage roles. In particular, never map it to `ready-for-agent`.
+The workflow labels are separate from the five triage roles. In particular, never map `spec` to `ready-for-agent`. Claiming a ticket removes `ready-for-agent` and adds `in-progress`; `in-progress` is removed once the ticket closes.
 
 Edit the right-hand column to match whatever vocabulary you actually use.

@@ -57,7 +57,7 @@ If it is installed, ask exactly one question:
 
 The defaults are the five canonical roles, each label string equal to its name: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. On **yes**, write them as-is. Only if the user says no, usually because their tracker already uses other names (e.g. `bug:triage` for `needs-triage`), collect the overrides so `triage` applies existing labels instead of creating duplicates.
 
-Also record the separate `spec` workflow label. It marks a specification awaiting ticket breakdown, not work ready for the AFK agent, and must never map to `ready-for-agent`.
+Also record the separate workflow labels. `spec` marks a specification awaiting ticket breakdown, not work ready for the AFK agent, and must never map to `ready-for-agent`. `in-progress` marks a ticket that `implement` or `afk` has claimed and is actively working on.
 
 **Section C: Domain docs.** Default to **single-context** (one `CONTEXT.md` + `docs/adr/` at the repo root). This fits almost every repo; write it without asking.
 
@@ -115,7 +115,7 @@ Then write the docs files using the seed templates in this skill folder as a sta
 
 For "other" issue trackers, write `docs/agents/issue-tracker.md` from scratch using the user's description.
 
-When the selected tracker requires labels to exist before use, create any missing configured labels after the user approves the draft. This includes the five triage roles and the separate `spec` workflow label. Leave existing labels and their presentation unchanged.
+When the selected tracker requires labels to exist before use, create any missing configured labels after the user approves the draft. This includes the five triage roles and the separate `spec` and `in-progress` workflow labels. Leave existing labels and their presentation unchanged.
 
 ### 5. Done
 
