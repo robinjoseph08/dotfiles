@@ -1,71 +1,71 @@
 # Issue tracker: Forgejo
 
-Issues and specs for this repo live as issues on Robin's self-hosted Forgejo, at `https://forgejo.local.rmj.io/<owner>/<repo>`. There is no CLI; use `curl` and `jq` against the Gitea-compatible REST API at `https://forgejo.local.rmj.io/api/v1`. The full reference is `https://forgejo.local.rmj.io/swagger.v1.json`. Forgejo is reachable only from the home network or Tailscale.
+Issues and specs for this repo live at `https://forgejo.local.rmj.io/<owner>/<repo>`. Use Forgejo CLI `fj` for ordinary operations. The commands below match `fj` 0.6.0 and Forgejo 15.0.9. Forgejo is reachable only from the home network or Tailscale.
 
-## Authentication
+## Access and targeting
 
-The API token lives in the macOS Keychain under service `forgejo-cli`, account `robin`. Read it into a variable inside the same command and never print, log, or write it to a file:
+Check `fj version` and `fj -H forgejo.local.rmj.io whoami`. If the CLI is missing or authentication fails, stop and tell the user; do not install it or change login configuration without approval. `fj` uses its own saved login, separate from the Keychain token used for REST below. Never print stored credentials.
 
-```sh
-T=$(security find-generic-password -s forgejo-cli -a robin -w)
-API=https://forgejo.local.rmj.io/api/v1/repos/<owner>/<repo>
-curl -fsS -H "Authorization: token $T" "$API/issues/1"
-```
-
-The token has admin scope. Only delete issues, labels, or anything else when the user asks for that specific action.
+Infer `<owner>/<repo>` from the Forgejo git remote, then pass it explicitly. Use `--repo <owner>/<repo>` for create/search commands and quote issue identifiers as `'<owner>/<repo>#<n>'`. `-R` selects a local remote, not an owner/repo. Explicit host and repo arguments prevent accidental targeting of another remote.
 
 ## Conventions
 
-- **Create an issue**: `POST $API/issues` with `{"title", "body", "labels": [<label ids>]}`. Creation takes label **IDs**, not names; look them up with `GET $API/labels`. Build the JSON with `jq -n --arg title ... --rawfile body <file>` so multi-line bodies are escaped correctly.
-- **Read an issue**: `GET $API/issues/<n>` for the title, body, state, and labels, plus `GET $API/issues/<n>/comments` for the comments.
-- **List issues**: `GET "$API/issues?type=issues&state=open&limit=50&labels=<a>,<b>"`, paging with `&page=` until a page comes back empty. Always pass `type=issues`, or pull requests are mixed in.
-- **Comment on an issue**: `POST $API/issues/<n>/comments` with `{"body"}`.
-- **Apply / remove labels**: `POST $API/issues/<n>/labels` with `{"labels": ["<name>"]}` (names or IDs both work here); `DELETE $API/issues/<n>/labels/<name-or-id>`.
-- **Create a missing label**: `POST $API/labels` with `{"name", "color": "#rrggbb"}`.
-- **Close**: post the explanation as a comment first, then `PATCH $API/issues/<n>` with `{"state": "closed"}`.
-- **Assign**: `PATCH $API/issues/<n>` with `{"assignees": ["robin"]}`.
+Prefix every command below with `fj -H forgejo.local.rmj.io`:
 
-Infer `<owner>/<repo>` from `git remote -v` (`git@forgejo.local.rmj.io:<owner>/<repo>.git`).
+| Task | Command |
+|---|---|
+| Create an issue | `issue create "<title>" --repo <owner>/<repo> --body-file <file> --no-template` |
+| Read an issue | `issue view '<owner>/<repo>#<n>'`, then `issue view '<owner>/<repo>#<n>' comments` |
+| Read assignees | `issue view '<owner>/<repo>#<n>' assignees` |
+| List open issues | `issue search --repo <owner>/<repo> --state open`, optionally `--labels "<label>"` |
+| Comment | `issue comment '<owner>/<repo>#<n>' --body-file <file>` |
+| Add/remove labels | `issue edit '<owner>/<repo>#<n>' labels --add "<label>" --rm "<other-label>"`; omit unused options |
+| Create a missing label | `repo labels <owner>/<repo> create "<label>" "<rrggbb>"` |
+| Close with an explanation | `issue close '<owner>/<repo>#<n>' --with-msg "<reason>"`; comments before closing |
+| Assign | `issue assign '<owner>/<repo>#<n>' robin` |
 
-## Scripting
+Search fetches all pages and excludes PRs. Supply body files or text explicitly to avoid opening an editor. Creation has no label or assignee flags; apply them afterwards. If blank issues are disabled, select an approved `--template` instead of `--no-template`. `--body` cannot be combined with `--template`. For a YAML template, `--body-file` must contain the form structure that `fj` expects, not an arbitrary issue body. If that form cannot be prepared from the selected template, stop and ask for guidance rather than opening an editor or bypassing the requirement.
 
-Unlike `gh`, `curl` exits 0 on HTTP errors, so a failed call can pass silently down a script.
+When a skill says "publish to the issue tracker", create an issue and apply the configured labels. When it says "fetch the relevant ticket", read the issue and its comments.
 
-- Always use `curl -fsS` so HTTP errors fail the command.
-- When a later call uses a value from an earlier response (such as a new issue's `.number`), check it isn't `null` before continuing, and stop on the first failure.
-- After publishing several issues, verify titles, bodies, labels, and dependencies with `GET` before reporting success.
+## Automation and verification
 
-## Dependencies
+`fj` 0.6.0 has no JSON output or generic API command. Use REST plus `jq` when a script needs structured responses, issue numbers from creation, bulk verification, or dependencies. Do not parse localized CLI output for identifiers. Unknown label names can warn without failing the command, so verify resulting labels through REST before reporting success.
 
-Record every dependency with Forgejo's native issue dependencies, never only as text in the body:
+After publishing, verify titles, bodies, labels, and native dependencies with GET requests. Stop on any failed call or missing identifier. Preserve existing labels. Only delete issues, labels, or other resources when the user asks for that specific action.
 
-- **Mark issue A as blocked by issue B**: `POST $API/issues/<A>/dependencies` with `{"owner": "<owner>", "repo": "<repo>", "index": <B>}`.
-- **Verify**: `GET $API/issues/<A>/dependencies` lists every issue blocking A, with its state. `GET $API/issues/<B>/blocks` lists what B blocks.
-- **Remove**: `DELETE $API/issues/<A>/dependencies` with the same body.
+## REST fallback and dependencies
 
-A `Blocked by: #<n>` line in the body may supplement the native link but never replace it.
+The fallback token lives in the macOS Keychain under service `forgejo-cli`, account `robin`. It is not the CLI's login. If missing, stop and tell the user. Read it into a variable inside the same command; never print, log, or write it to a file:
+
+```sh
+T=$(security find-generic-password -s forgejo-cli -a robin -w) || exit
+API="https://forgejo.local.rmj.io/api/v1/repos/<owner>/<repo>"
+curl -fsS -H "Authorization: token $T" "$API/issues/<n>"
+```
+
+Always use `curl -fsS` so HTTP errors fail. Build JSON with `jq -n` and `--rawfile` rather than interpolating bodies. For structured issue creation, `POST $API/issues` with `{"title","body","labels":[<numeric-label-ids>]}`; resolve label IDs with `GET $API/labels` and use the response's `.number` for later issue operations. Page through list endpoints with `limit` and `page` until empty. The installed API reference is `https://forgejo.local.rmj.io/swagger.v1.json`.
+
+`fj` has no dependency commands. Record each dependency natively, never only as body text:
+
+- **Make A depend on B**: `POST $API/issues/<A>/dependencies` with `{"owner":"<owner>","repo":"<repo>","index":<B>}`. Both A and B are repository-local issue numbers, not global IDs.
+- **Verify**: `GET $API/issues/<A>/dependencies` lists A's blockers; `GET $API/issues/<B>/blocks` lists the issues B blocks. Read all pages and verify the expected issue numbers and states.
+- **Remove**: `DELETE $API/issues/<A>/dependencies` with the same body, only when the user approves removing that relationship.
+
+A `Blocked by: #<n>` line may supplement native links, never replace them. The fallback token has admin scope; do not use that scope to perform unrequested destructive or instance-wide changes.
 
 ## Pull requests as a triage surface
 
 **PRs as a request surface: no.** _(Set to `yes` if this repo treats external PRs as feature requests; `/triage` reads this flag.)_
 
-When set to `yes`, PRs run through the same labels and states as issues: list them with `GET "$API/pulls?state=open"`, read the diff with `GET $API/pulls/<n>.diff`, and comment and label through the `issues/<n>` endpoints, since Forgejo shares one number space across issues and PRs.
-
-## When a skill says "publish to the issue tracker"
-
-Create a Forgejo issue with `POST $API/issues`.
-
-## When a skill says "fetch the relevant ticket"
-
-`GET $API/issues/<n>` and `GET $API/issues/<n>/comments`.
+When enabled, use `pr search --repo <owner>/<repo> --state open`, `pr view '<owner>/<repo>#<n>'`, `pr view '<owner>/<repo>#<n>' comments`, and `pr view '<owner>/<repo>#<n>' diff`, each with the same CLI prefix above. Use `pr comment` and `pr edit ... labels` for comments and labels. Apply the repo's definition of an external contributor rather than treating every returned PR as external; use REST when author or membership data is needed. Issues and PRs share one number space.
 
 ## Wayfinding operations
 
-Used by `/wayfinder`. The **map** is a single issue with **child** issues as tickets.
+Used by `/wayfinder`. The **map** is one issue labelled `wayfinder:map`, holding the Notes / Decisions-so-far / Fog body, with linked child issues as tickets.
 
-- **Map**: a single issue labelled `wayfinder:map`, holding the Notes / Decisions-so-far / Fog body.
-- **Child ticket**: the installed Forgejo `15.0.9` API was verified on 2026-10-06 to have no native sub-issues. Add each child to a task list in the map body and put `Part of #<map>` at the top of the child body. Labels: `wayfinder:<type>` (`research`/`prototype`/`grilling`/`task`). Once claimed, the ticket is assigned to the driving dev. After an upgrade, check `/api/v1/version` and `/swagger.v1.json` for native parent-child operations before using them. Dependencies are separate blocking relationships, not a substitute for sub-issues.
-- **Blocking**: native issue dependencies, as above. A ticket is unblocked when every issue in `GET $API/issues/<n>/dependencies` is closed.
-- **Frontier query**: list the map's open children, drop any with an open dependency or an assignee; first in map order wins.
-- **Claim**: assign the ticket to `robin`, the session's first write.
-- **Resolve**: comment with the answer, close the ticket, then append a context pointer (gist + link) to the map's Decisions-so-far.
+- **Child ticket**: Forgejo 15.0.9 has no native sub-issues. Add each child to a task list in the map body and put `Part of #<map>` at the top of the child body. Use labels `wayfinder:<type>` for `research`/`prototype`/`grilling`/`task`. After a server upgrade, check `/api/v1/version` and Swagger before adopting parent-child operations. Installing a newer CLI does not add server support.
+- **Blocking**: use the native dependency operations above. A ticket is unblocked only when all its blockers are closed; parent links are not blocking edges.
+- **Frontier**: list the map's open children, read their native dependencies and assignees, then drop any with an open blocker or assignee. First in map order wins.
+- **Claim**: assign the ticket to `robin` as the session's first write.
+- **Resolve**: comment with the answer, close the ticket, and append a context pointer with a gist and link to the map's Decisions-so-far.

@@ -9,7 +9,20 @@ Forgejo runs on Atlas at `https://forgejo.local.rmj.io`. It's reachable only fro
 
 Everything lives under the user `robin`: `git@forgejo.local.rmj.io:robin/<repo>.git`.
 
-## Check access
+## CLI access
+
+Use the installed Forgejo CLI, `fj`, for ordinary repository, issue, PR, and Actions operations. The commands here match `fj` 0.6.0 and Forgejo 15.0.9:
+
+```sh
+fj version
+fj -H forgejo.local.rmj.io whoami
+```
+
+Use explicit host and repository arguments rather than relying on remote inference. Repository arguments are `robin/<repo>`; issue and PR identifiers are quoted as `'robin/<repo>#<n>'`. `--repo` is available on create/search and Actions commands; `-R` selects a local remote, not a repository name.
+
+`fj` uses its own configured login, separate from the Keychain token used for REST fallbacks below. Never inspect or print saved credentials. If the CLI or login is missing, or authentication fails, stop and tell the user; do not install, log in, or move tokens without approval.
+
+## Check Git access
 
 Run `ssh -T forgejo.local.rmj.io`. It should say `Hi there, robin! You've successfully authenticated`. It works through this `~/.ssh/config` entry:
 
@@ -65,7 +78,7 @@ Forgejo Actions runs workflows from `.forgejo/workflows/*.yml` (and `.github/wor
 - **Limits.** At most 2 jobs run at once, and a job is cut off after 1 hour.
 - **Hostnames.** `*.local.rmj.io` names resolve inside jobs.
 
-To check a run, use the API (see below): `GET /repos/robin/<repo>/actions/tasks` lists each job with its status (`success`, `failure`, `running`, ...). `GET /repos/robin/<repo>/actions/runs` lists workflow runs. If a job fails, retrieve its logs using the instructions below rather than asking the user to paste output from the browser.
+To inspect CI jobs, use `fj -H forgejo.local.rmj.io actions tasks --repo robin/<repo> --page 1`. Each page has up to 20 tasks; fetch later pages when needed. Displayed numbers are repository-local run numbers, not global run/job IDs. Use REST `GET /repos/robin/<repo>/actions/runs` when global IDs or structured run data are needed. `fj` 0.6.0 has no runs or logs command. For a failed job on Forgejo 15, retrieve logs over SSH as described below rather than asking the user to paste them.
 
 To reproduce a run locally with the same runner, run `forgejo-runner exec` from the runner's image against a fresh `git init` copy of the repo (a worktree's `.git` file doesn't resolve inside the container):
 
@@ -134,36 +147,38 @@ Do not upgrade the instance just to retrieve logs without the user's approval.
 - **No Git LFS.** It's turned off, so don't set up LFS tracking. Large binaries don't belong in these repos. If a project needs them, ask the user where they should live on Atlas.
 - **Push creates repos only under `robin`.** Organizations would have to be made in the web UI by the user.
 
-## API access
+## CLI operations and REST fallbacks
 
-An admin API token for `robin` is stored in the macOS Keychain under service `forgejo-cli`, account `robin`. Use it for anything the web UI would otherwise be needed for: issues, labels, issue dependencies, pull requests, and repo settings such as the description or default branch.
+For issue, label, PR, and dependency commands, use the [Forgejo tracker template](../setup-matt-pocock-skills/issue-tracker-forgejo.md). Additional CLI operations:
 
-Read it into a variable inside the same command and never print it, log it, or write it to a file:
+| Task | Command |
+|---|---|
+| View a repository | `fj -H forgejo.local.rmj.io repo view robin/<repo>` |
+| Set its description | `fj -H forgejo.local.rmj.io repo edit robin/<repo> --description "<description>"` |
+| Set its default branch | `fj -H forgejo.local.rmj.io repo edit robin/<repo> --default-branch master` |
+| Inspect CI tasks | `fj -H forgejo.local.rmj.io actions tasks --repo robin/<repo> --page 1` |
+| Run an approved workflow | `fj -H forgejo.local.rmj.io actions dispatch <file>.yml master --repo robin/<repo>`; requires `on: workflow_dispatch` |
+
+`fj` 0.6.0 has no JSON output, generic API command, issue-dependency commands, package commands, or CI-log retrieval. Keep REST for structured automation, native dependencies, package operations, and global run IDs. Unknown label names can warn without a failing exit status; verify resulting labels through REST rather than trusting the command's success alone.
+
+An admin fallback token for `robin` is stored in the macOS Keychain under service `forgejo-cli`, account `robin`. This is separate from `fj`'s saved login. Read it into a variable inside the same command and never print, log, or write it to a file:
 
 ```sh
-T=$(security find-generic-password -s forgejo-cli -a robin -w)
+T=$(security find-generic-password -s forgejo-cli -a robin -w) || exit
 curl -fsS -H "Authorization: token $T" https://forgejo.local.rmj.io/api/v1/user
 ```
 
-The API is Gitea-compatible and lives at `https://forgejo.local.rmj.io/api/v1`. The full reference is `https://forgejo.local.rmj.io/swagger.v1.json`. Common calls:
+The API is at `https://forgejo.local.rmj.io/api/v1`; the installed reference is `https://forgejo.local.rmj.io/swagger.v1.json`. Use `curl -fsS` and `jq`, page through list endpoints, and verify writes with GET. REST examples:
 
-| Task | Call |
-|---|---|
-| Create an issue | `POST /repos/robin/<repo>/issues` with `{"title", "body", "labels": [<label ids>]}` |
-| Create a label | `POST /repos/robin/<repo>/labels` with `{"name", "color"}` |
-| Mark issue A as blocked by issue B | `POST /repos/robin/<repo>/issues/<A>/dependencies` with `{"owner": "robin", "repo": "<repo>", "index": <B>}` |
-| List what blocks issue A | `GET /repos/robin/<repo>/issues/<A>/dependencies` |
-| Change repo settings | `PATCH /repos/robin/<repo>` with e.g. `{"default_branch": "master"}` |
-| List a repo's CI jobs | `GET /repos/robin/<repo>/actions/tasks` |
-| Run a workflow manually | `POST /repos/robin/<repo>/actions/workflows/<file>.yml/dispatches` with `{"ref": "master"}` (the workflow needs `on: workflow_dispatch`) |
-| List container images | `GET /packages/robin?type=container` (one entry per tag and per manifest digest) |
-| Delete an image version | `DELETE /packages/robin/container/<name>/<tag or sha256:digest>` |
+- **List workflow runs**: `GET /repos/robin/<repo>/actions/runs` for global IDs used by the SSH log lookup.
+- **List container images**: `GET /packages/robin?type=container`, one entry per tag and manifest digest.
+- **Delete an approved image version**: `DELETE /packages/robin/container/<name>/<tag or sha256:digest>`.
 
-Record issue dependencies with the dependencies endpoint, not only as text in the body, and verify them with the matching `GET`.
+Record issue dependencies through the native dependencies endpoint and verify them with its GET, as the tracker template describes. Forgejo 15.0.9 has no native sub-issues; linked child issues remain the fallback. Neither a CLI update nor CLI authentication grants server features or new permissions.
 
-The token has admin scope, so it can also delete repos, rewrite settings, and manage users. Only do destructive or instance-wide things (deleting repos, branches, issues, or packages, changing visibility, anything under `/admin`) when the user asks for that specific action. Never force-push over someone else's history without being asked.
+Both access methods may have admin permissions. Only perform destructive or instance-wide operations, such as deleting repositories, branches, issues, or packages, changing visibility, or modifying `/admin` resources, when the user asks for that specific action. Never force-push over someone else's history without being asked.
 
-If the Keychain entry is missing, for example on a new machine, stop and tell the user. They create the token in Forgejo under Settings → Applications and store it with `security add-generic-password -s forgejo-cli -a robin -w`.
+If the fallback Keychain entry is missing, stop and tell the user. They create the token in Forgejo under Settings → Applications and store it with `security add-generic-password -s forgejo-cli -a robin -w`; do not copy or extract credentials from `fj`'s files to bypass that setup.
 
 ## Troubleshooting
 

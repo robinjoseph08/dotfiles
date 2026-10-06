@@ -43,7 +43,7 @@ Default posture: these skills were designed for GitHub. If a `git remote` points
 
 - **GitHub**: issues live in the repo's GitHub Issues (uses the `gh` CLI)
 - **GitLab**: issues live in the repo's GitLab Issues (uses the [`glab`](https://gitlab.com/gitlab-org/cli) CLI)
-- **Forgejo**: issues live in the repo's Issues on Robin's Forgejo (uses `curl` against the REST API with the `forgejo-cli` Keychain token)
+- **Forgejo**: issues live in the repo's Issues on Robin's Forgejo (uses the `fj` CLI, with Keychain-backed REST for structured automation and native dependencies)
 - **Local markdown**: issues live as files under `.scratch/<feature>/` in this repo (good for solo projects or repos without a remote)
 - **Other** (Jira, Linear, etc.): ask the user to describe the workflow in one paragraph; the skill will record it as freeform prose
 
