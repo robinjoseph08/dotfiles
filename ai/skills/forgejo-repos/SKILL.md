@@ -65,7 +65,9 @@ Forgejo Actions runs workflows from `.forgejo/workflows/*.yml` (and `.github/wor
 - **Limits.** At most 2 jobs run at once, and a job is cut off after 1 hour.
 - **Hostnames.** `*.local.rmj.io` names resolve inside jobs.
 
-To check a run, use the API (see below): `GET /repos/robin/<repo>/actions/tasks` lists each job with its status (`success`, `failure`, `running`, ...). The job logs are only visible in the web UI at `https://forgejo.local.rmj.io/robin/<repo>/actions/runs/<n>`, since the API token can't read them. If a job fails and the cause isn't obvious, ask the user to paste the failing step's output. To reproduce a run locally with the same runner, run `forgejo-runner exec` from the runner's image against a fresh `git init` copy of the repo (a worktree's `.git` file doesn't resolve inside the container):
+To check a run, use the API (see below): `GET /repos/robin/<repo>/actions/tasks` lists each job with its status (`success`, `failure`, `running`, ...). `GET /repos/robin/<repo>/actions/runs` lists workflow runs. If a job fails, retrieve its logs using the instructions below rather than asking the user to paste output from the browser.
+
+To reproduce a run locally with the same runner, run `forgejo-runner exec` from the runner's image against a fresh `git init` copy of the repo (a worktree's `.git` file doesn't resolve inside the container):
 
 ```sh
 docker run --rm --user root -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD":"$PWD" -w "$PWD" \
@@ -77,6 +79,55 @@ docker run --rm --user root -v /var/run/docker.sock:/var/run/docker.sock -v "$PW
 `GET /admin/actions/runners` shows the runner's version. A local run skips `actions/checkout` and copies the directory instead, and `-s GITHUB_TOKEN=bogus` stands in for the job token GitHub rejects. If the workflow installs `github:` tools with mise, also pass `-s MISE_GITHUB_TOKEN="$(gh auth token)"`, or mise install fails with a 401 that the real run doesn't have. Passing the token on the command line keeps it out of files.
 
 The runner itself is the `forgejo-runner` app on Atlas. Changing it (labels, capacity, image versions) is an Atlas change, so check with the user first.
+
+### Get CI job logs
+
+Atlas was verified running Forgejo **15.0.9** on 2026-10-05. This version has no REST log-download endpoints, regardless of token permissions. Read stored logs over SSH instead. After an upgrade, check `GET /api/v1/version` and the installed Swagger definition before choosing the method.
+
+#### Forgejo 15: read logs on Atlas
+
+The host has `sqlite3` and `zstd`. The database is `/mnt/fast/apps/forgejo/data/data/gitea.db`, and compressed logs are under `/mnt/fast/apps/forgejo/data/actions_log/`.
+
+1. Get the workflow run's global `id` from `GET /repos/robin/<repo>/actions/runs`. This is not the repository-local number in the browser URL, which is `index_in_repo`.
+2. Query the task metadata read-only. This example uses global run ID `19`; replace it with the selected run's ID:
+
+   ```sh
+   ssh robin@atlas.local.rmj.io 'sudo sqlite3 -readonly -header -column /mnt/fast/apps/forgejo/data/data/gitea.db "
+   SELECT j.run_id, j.id AS job_id, j.name, t.id AS task_id, t.attempt,
+          t.log_in_storage, t.log_expired, t.log_filename
+   FROM action_task AS t
+   JOIN action_run_job AS j ON j.id = t.job_id
+   WHERE j.run_id = 19
+   ORDER BY j.id, t.attempt DESC;"'
+   ```
+
+3. Pick the desired job and attempt, normally the latest. Use its exact `log_filename` relative to the log directory. For example:
+
+   ```sh
+   ssh robin@atlas.local.rmj.io \
+     'sudo zstd -dc /mnt/fast/apps/forgejo/data/actions_log/robin/camera-cli/13/19.log.zst'
+   ```
+
+Do not guess filenames from run or job IDs. Task IDs differ from job IDs on retries. `log_expired = 1` means the log has expired; `log_in_storage = 0` means it is not finalized in this storage yet. The stored-log method is for finalized logs, not live streaming. For live output, use the signed-in web UI at `https://forgejo.local.rmj.io/robin/<repo>/actions/runs/<index_in_repo>`.
+
+This is an internal-storage workaround, not a stable API. Keep database access read-only and select only the needed metadata, since other columns contain credentials. Logs can contain secrets too; show only relevant output and redact sensitive values. Do not modify the database or log files.
+
+#### Forgejo 16+: use the REST API
+
+[PR #12666](https://codeberg.org/forgejo/forgejo/pulls/12666) added log downloads in Forgejo 16.0.0. Prefer these endpoints when the installed version supports them:
+
+- `GET /api/v1/repos/{owner}/{repo}/actions/jobs/{job_id}/logs`: plaintext, latest attempt by default. Use `?attempt=N` for a particular attempt.
+- `GET /api/v1/repos/{owner}/{repo}/actions/runs/{run_id}/logs`: ZIP containing each job's latest attempt.
+
+Use global API run/job IDs, not the repository-local run number or task ID. A PAT needs `read:repository`, access to the selected repository, and Actions read permission. Use the Keychain token described below:
+
+```sh
+T=$(security find-generic-password -s forgejo-cli -a robin -w) || exit
+curl -fsS -H "Authorization: token $T" \
+  "https://forgejo.local.rmj.io/api/v1/repos/robin/<repo>/actions/jobs/<job_id>/logs"
+```
+
+Do not upgrade the instance just to retrieve logs without the user's approval.
 
 ## What Forgejo here doesn't do
 
