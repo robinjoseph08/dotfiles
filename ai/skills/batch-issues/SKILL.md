@@ -16,11 +16,13 @@ The prompt templates for the three agent roles live in [`PROMPTS.md`](PROMPTS.md
 
 Read every issue with its comments. Note the acceptance criteria, any triage brief, and any decision the issue leaves open; those decisions are yours to make unless they materially change scope, in which case surface them to the user without blocking the batch.
 
+Then read each issue's existing dependencies from the tracker (on GitHub, `gh api repos/{owner}/{repo}/issues/<n>/dependencies/blocked_by`). An issue whose blocker is still open does not start in this batch, even when the blocker is in the same batch: drop it from this run, or hold it until the blocker's PR has merged and then create its worktree off the new default branch. Tell the user which issues you held and why. A recorded block is the owner's decision; do not overrule it because the overlap looks small or the edits fall in different hunks, and do not swap it for "ship them one after the other".
+
 Before creating worktrees, map each issue to the files and symbols it will touch (the issue's file references plus a quick grep) and look for overlap between issues. Two issues that edit the same handler, the same test helper, the same route table, the same generated-type consumer, or the same `AGENTS.md` section must not run in the same batch: sequence them, and record the order with the tracker's native blocked-by relationship so the second one cannot start until the first has merged. The repo's branch protection is deliberately not strict (no "up to date before merge"), so two green PRs that both touch one file can land in an order their CI never tested; a semantic clash (a renamed field one side, a new consumer of the old name on the other) then breaks the default branch and needs a hotfix. Keeping overlapping work in separate, blocked tickets is cheaper than that hotfix. Do not propose making protection strict; the owner has chosen speed here.
 
 Create one worktree per issue off the current remote default branch, named `<issue>-<slug>` with branch `wktr/<issue>-<slug>` (or the repo's convention), and run the repo's setup command in each, in parallel. Plain `git worktree add` is enough; skip multiplexer tooling.
 
-Completion criterion: every issue is understood, overlapping issues are sequenced with native blocks, and every worktree exists, is set up, and sits on the same remote default commit.
+Completion criterion: every issue is understood, every existing blocked-by relationship has been checked and any issue with an open blocker is held, overlapping issues are sequenced with native blocks, and every worktree exists, is set up, and sits on the same remote default commit.
 
 ## 2. Dispatch one implementation agent per issue
 
