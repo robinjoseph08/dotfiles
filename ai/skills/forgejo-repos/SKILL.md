@@ -61,6 +61,7 @@ Forgejo Actions runs workflows from `.forgejo/workflows/*.yml` (and `.github/wor
       github_token: ${{ secrets.MISE_GITHUB_TOKEN }}
   ```
   For other tools that read `GITHUB_TOKEN`, set their own token variable from the secret, or run them with `env -u GITHUB_TOKEN` to go anonymous.
+- **pnpm puts its store inside the checkout.** The checkout is its own mount, and pnpm keeps its store on the project's filesystem, so `pnpm install` creates `.pnpm-store/` at the repo root. Anything that scans the tree then trips over thousands of store files: `prettier --check .` fails with "Code style issues found", and ESLint or broad globs can too. Add `.pnpm-store/` to `.gitignore` (Prettier honors it), ESLint's ignores, and `.dockerignore`. It never shows up locally, where the store lives in the home directory.
 - **Limits.** At most 2 jobs run at once, and a job is cut off after 1 hour.
 - **Hostnames.** `*.local.rmj.io` names resolve inside jobs.
 
@@ -73,7 +74,7 @@ docker run --rm --user root -v /var/run/docker.sock:/var/run/docker.sock -v "$PW
   -s GITHUB_TOKEN=bogus
 ```
 
-`GET /admin/actions/runners` shows the runner's version. A local run skips `actions/checkout` and copies the directory instead, and `-s GITHUB_TOKEN=bogus` stands in for the job token GitHub rejects.
+`GET /admin/actions/runners` shows the runner's version. A local run skips `actions/checkout` and copies the directory instead, and `-s GITHUB_TOKEN=bogus` stands in for the job token GitHub rejects. If the workflow installs `github:` tools with mise, also pass `-s MISE_GITHUB_TOKEN="$(gh auth token)"`, or mise install fails with a 401 that the real run doesn't have. Passing the token on the command line keeps it out of files.
 
 The runner itself is the `forgejo-runner` app on Atlas. Changing it (labels, capacity, image versions) is an Atlas change, so check with the user first.
 
