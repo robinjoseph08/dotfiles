@@ -17,7 +17,7 @@ Do not discard unrelated work. Put the intended changes on a feature branch and 
 
 ## Publish
 
-Bring the branch up to date with the remote default branch when needed, resolving conflicts carefully and rerunning affected checks. Push the reviewed commits and create or update the pull request with an accurate summary, test evidence, and issue-closing reference when applicable.
+Bring the branch up to date with the remote default branch when needed, resolving conflicts carefully and rerunning affected checks. Use the `pr` skill to shape the pull request body with a visual summary, before/after evidence, and merge risk. Preserve repository-required sections, including upgrade instructions for breaking changes, and include an issue-closing reference when applicable. Push the reviewed commits and create or update the pull request with that body.
 
 Before attempting automatic merge, verify whether branch protection or repository rules actually require the pending status checks. Never assume a command such as `gh pr merge --auto` will schedule a later merge: when no required gate blocks the pull request, the hosting platform may merge immediately while CI is still pending.
 

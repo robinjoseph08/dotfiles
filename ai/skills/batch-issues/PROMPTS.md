@@ -1,6 +1,27 @@
 # Batch Issues: agent prompt templates
 
-Three roles, one template each. Fill every `<placeholder>`. Keep the repo pointers exact; agents have no other way to learn the conventions. Every template repeats three rules because each agent starts with an empty context: stay inside the worktree, never use bare `git stash`, no em-dashes anywhere.
+Four roles, one template each. Exploration is optional and writes only shared notes outside the repo; implementation, QA, and shipping each stay inside their assigned worktree. Fill every `<placeholder>`. Keep repo and research pointers exact. Every agent starts with an empty context, must not interfere with sibling agents, and must never use bare `git stash` or write em-dashes.
+
+## Exploration agent
+
+```
+You are researching facts shared by GitHub issues <numbers> in <owner/repo>. Do not implement the issues or make product decisions. Read the issues, their comments, and any spec at <issue/spec pointers>. Follow repository instructions at <AGENTS.md / existing CLAUDE.md / docs/agents pointers>.
+
+SOURCE: repository <path>, commit <base-sha>. Anchor codebase findings to that commit using `git show <base-sha>:<file>` or a dedicated read-only snapshot. Do not switch branches, change tracked files, or touch implementation worktrees.
+
+QUESTIONS: <specific facts at least two issues need; exclude decisions the user must make>.
+
+EXTERNAL SOURCES: <official docs, source code, specs, or first-party API pointers, if relevant>. Prefer primary sources and cite the exact URL and relevant section. Do not change issues, labels, dependencies, credentials, or permissions. Never copy secrets into notes.
+
+OUTPUT: write a new Markdown file at <absolute OS-temp research path>, outside the repository and all worktrees. Do not overwrite another agent's notes. Include:
+- Source repository and commit, issue/spec pointers, and questions answered.
+- Findings with code file/line references anchored to that commit or external-source links. List the code paths consumers should compare against their later base commits.
+- Which issues each finding helps, what remains uncertain, and anything that could invalidate the finding after a dependency merges.
+
+Keep the notes factual. Do not restate entire issues or specs, invent unresolved decisions, or claim a hypothesis is verified.
+
+FINAL REPORT (under 2000 characters): the absolute notes path, questions answered, and unresolved questions or source limitations. Verify the file exists before reporting completion. The coordinator will pass this path to consumers rather than copying the notes into their prompts.
+```
 
 ## Implementation agent
 
@@ -13,14 +34,17 @@ Check the project's root CLAUDE.md and any relevant subdirectory CLAUDE.md files
 
 THE ISSUE: run `gh issue view <n> --comments` to read it in full. Summary: <two paragraphs: the defect or change, the decision if the issue left one open, the acceptance criteria, what is out of scope, which docs must change>.
 
+SHARED RESEARCH: <absolute notes paths and source commits, or none>. Read only findings relevant to this issue. These are evidence, not acceptance criteria or product decisions. For code findings from an older source commit, compare the referenced paths with this worktree's <base-sha> and verify any changed paths before relying on the notes. Report missing notes or unresolved facts to the coordinator; request a scoped update when needed instead of repeating all the research.
+
 PROCESS (this is the /implement workflow):
 1. Follow Red-Green-Refactor strictly: write the failing test first, run it and confirm it fails, then implement, then confirm it passes. <Name the Red test the issue implies.>
 2. Run targeted checks regularly: <repo's lint and test commands for this stack>.
 3. When done, run the full <repo's full check command> once. It may wait behind another worktree's run; that's expected. It must pass. If it fails only on <known load-sensitive parts, e.g. docs e2e server timeouts or 15s unit-test timeouts> while `uptime` shows heavy load, rerun the failed part alone, then rerun the full check when the load is under about 20; report each attempt.
-4. Then invoke the `code-review` skill (via the Skill tool) on your work and fix every valid finding. Your reviewers deliver reports to you by message; if a report hasn't arrived within a few minutes of that reviewer finishing, proceed with what you have rather than waiting.
+4. Use the `code-review` skill on your work and fix every valid finding. Record the blocking reviewers' IDs and retrieve their actual results before reporting implementation complete. If a report is missing, retrieve it through the harness or ask the coordinator to forward the full result; elapsed time or a completion notification alone does not satisfy this gate.
 5. Commit to the current branch with a message in the `<repo's [Category] format>` from CLAUDE.md. If the repo marks breaking changes in the subject (shisho uses `!` after the category, `[Fix]! ...`, for any change an operator must react to: renamed config keys, changed defaults, removed routes or fields, new startup validation), use it, and list each breaking change in your report so the ship agent can write the upgrade notes. Do NOT push, do NOT open a PR. Do not use em-dashes anywhere in code, docs, or commit messages.
 
 FINAL REPORT (keep it under 5000 characters so it isn't truncated; be concrete):
+- Commit SHA from this worktree's HEAD.
 - What you changed (files, behavior), and any decision you made on your own that the user might want to know.
 - Results of the full check (pass/fail, verbatim failing output if any) and of the code review (what you fixed, what you declined and why).
 - A QA CHECKLIST: a numbered list of specific, independently verifiable items a second agent can check without your context, each with a command, including at least one revert or mutation check per fix ("remove X, test Y fails"). Mark items that require a running app or manual testing separately.
@@ -37,6 +61,8 @@ Check the project's root CLAUDE.md and <relevant subdirectory CLAUDE.md files> f
 
 THE ISSUE: run `gh issue view <n> --comments`. Check every acceptance criterion.
 
+SHARED RESEARCH: <absolute notes paths and source commits, or none>. Use relevant findings as context, not proof that the implementation works. Independently verify claims that affect acceptance criteria, particularly code findings from a commit older than the implementation's base.
+
 THE IMPLEMENTER'S REPORT (verify, don't trust):
 ---
 <paste the implementer's report verbatim>
@@ -51,7 +77,7 @@ QA CHECKLIST (run from the worktree):
 
 MANUAL (attempt if feasible within about 15 minutes, else mark NOT VERIFIED with the reason): build the binary from this worktree, run it on a free port with an isolated data directory inside your own `scratchpad/qa-<n>/` subdirectory (never the main checkout's data, never another agent's directory), and exercise <the user-facing paths the issue names>. Stop the server afterwards.
 
-FINAL REPORT (under 4500 characters): for each checklist item and acceptance criterion, PASS / FAIL / NOT VERIFIED with one line of evidence. Bugs, convention violations, or concerns ranked by severity with file:line. Your judgment on <any decision the implementer made>. End with a one-line verdict: MERGEABLE, MERGEABLE WITH NITS (list them), or NEEDS FIXES (list them).
+FINAL REPORT (under 4500 characters): name the exact commit SHA you verified, then for each checklist item and acceptance criterion give PASS / FAIL / NOT VERIFIED with one line of evidence. Bugs, convention violations, or concerns ranked by severity with file:line. Your judgment on <any decision the implementer made>. End with a one-line verdict: MERGEABLE, MERGEABLE WITH NITS (list them), or NEEDS FIXES (list them).
 ```
 
 ## Ship agent

@@ -10,7 +10,7 @@ Scaffold the per-repo configuration that the engineering skills assume:
 
 - **Issue tracker**: where issues live (GitHub by default; local markdown is also supported out of the box)
 - **Triage labels**: the strings used for the five canonical triage roles
-- **Domain docs**: where `CONTEXT.md` and ADRs live, and the consumer rules for reading them
+- **Domain docs**: where `GLOSSARY.md` and ADRs live, and the consumer rules for reading them
 
 This is a prompt-driven skill, not a deterministic script. Explore, present what you found, confirm with the user, then write.
 
@@ -22,7 +22,7 @@ Look at the current repo to understand its starting state. Read whatever exists;
 
 - `git remote -v` and `.git/config`: is this a GitHub repo? Which one?
 - `AGENTS.md` and `CLAUDE.md` at the repo root: does either exist? Is there already an `## Agent skills` section in either?
-- `CONTEXT.md` and `CONTEXT-MAP.md` at the repo root
+- `GLOSSARY.md` and `GLOSSARY-MAP.md` at the repo root, plus legacy `CONTEXT.md` and `CONTEXT-MAP.md` files
 - `docs/adr/` and any `src/*/docs/adr/` directories
 - `docs/agents/`: does this skill's prior output already exist?
 - `.scratch/`: a sign that a local-markdown issue tracker convention is already in use
@@ -59,9 +59,9 @@ The defaults are the five canonical roles, each label string equal to its name: 
 
 Also record the separate workflow labels. `spec` marks a specification awaiting ticket breakdown, not work ready for the AFK agent, and must never map to `ready-for-agent`. `in-progress` marks a ticket that `implement` or `afk` has claimed and is actively working on.
 
-**Section C: Domain docs.** Default to **single-context** (one `CONTEXT.md` + `docs/adr/` at the repo root). This fits almost every repo; write it without asking.
+**Section C: Domain docs.** Preserve an existing domain-doc layout. Prefer `GLOSSARY.md` and `GLOSSARY-MAP.md`, falling back to legacy `CONTEXT.md` and `CONTEXT-MAP.md` files. Record the consumer fallback rules without renaming existing docs or creating duplicate glossaries. When no layout exists, default to **single-context** with one `GLOSSARY.md` and `docs/adr/` at the repo root. This fits almost every repo; write it without asking.
 
-Offer **multi-context** (a root `CONTEXT-MAP.md` pointing to per-context `CONTEXT.md` files) only when exploration found monorepo signals. Then confirm which layout they want.
+Offer **multi-context** (a root `GLOSSARY-MAP.md` pointing to per-context `GLOSSARY.md` files) only when exploration found monorepo signals. Then confirm which layout they want.
 
 ### 3. Confirm and edit
 

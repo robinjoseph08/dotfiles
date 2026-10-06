@@ -7,7 +7,7 @@ description: Diagnosis loop for hard bugs and performance regressions. Use when 
 
 A discipline for hard bugs. Skip phases only when explicitly justified.
 
-When exploring the codebase, read `CONTEXT.md` (if it exists) to get a clear mental model of the relevant modules, and check ADRs in the area you're touching.
+When exploring the codebase, read the domain glossary to understand the relevant modules, and check ADRs in the area you're touching. Follow `GLOSSARY-MAP.md`, falling back to `CONTEXT-MAP.md`, when a map exists. Within the relevant context, or at the root without a map, prefer `GLOSSARY.md`, otherwise use `CONTEXT.md`. If none exists, proceed silently.
 
 ## Redact
 

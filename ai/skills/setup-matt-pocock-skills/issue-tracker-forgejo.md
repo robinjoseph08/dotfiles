@@ -64,7 +64,7 @@ Create a Forgejo issue with `POST $API/issues`.
 Used by `/wayfinder`. The **map** is a single issue with **child** issues as tickets.
 
 - **Map**: a single issue labelled `wayfinder:map`, holding the Notes / Decisions-so-far / Fog body.
-- **Child ticket**: Forgejo has no sub-issues. Add each child to a task list in the map body and put `Part of #<map>` at the top of the child body. Labels: `wayfinder:<type>` (`research`/`prototype`/`grilling`/`task`). Once claimed, the ticket is assigned to the driving dev.
+- **Child ticket**: the installed Forgejo `15.0.9` API was verified on 2026-10-06 to have no native sub-issues. Add each child to a task list in the map body and put `Part of #<map>` at the top of the child body. Labels: `wayfinder:<type>` (`research`/`prototype`/`grilling`/`task`). Once claimed, the ticket is assigned to the driving dev. After an upgrade, check `/api/v1/version` and `/swagger.v1.json` for native parent-child operations before using them. Dependencies are separate blocking relationships, not a substitute for sub-issues.
 - **Blocking**: native issue dependencies, as above. A ticket is unblocked when every issue in `GET $API/issues/<n>/dependencies` is closed.
 - **Frontier query**: list the map's open children, drop any with an open dependency or an assignee; first in map order wins.
 - **Claim**: assign the ticket to `robin`, the session's first write.
